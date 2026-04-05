@@ -1,18 +1,23 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Vehicle } from '../models/types';
-import { storageService } from '../services/storageService';
-import { vehicleApiService } from '../services/vehicleApiService';
-import { v4 as uuidv4 } from 'uuid';
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { Vehicle } from "../models/types";
+import { storageService } from "../services/storageService";
+import { vehicleApiService } from "../services/vehicleApiService";
 
 interface VehiclesContextProps {
   vehicles: Vehicle[];
   loadVehicles: () => Promise<void>;
-  addVehicle: (data: Omit<Vehicle, 'id' | 'createdAt'>) => Promise<void>;
+  addVehicle: (data: Omit<Vehicle, "id" | "createdAt">) => Promise<void>;
 }
 
-const VehiclesContext = createContext<VehiclesContextProps | undefined>(undefined);
+const VehiclesContext = createContext<VehiclesContextProps | undefined>(
+  undefined,
+);
 
-export const VehiclesProvider = ({ children }: { children: React.ReactNode }) => {
+export const VehiclesProvider = ({
+  children,
+}: {
+  children: React.ReactNode;
+}) => {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
 
   const loadVehicles = async () => {
@@ -20,13 +25,16 @@ export const VehiclesProvider = ({ children }: { children: React.ReactNode }) =>
     setVehicles(data);
   };
 
-  const addVehicle = async (data: Omit<Vehicle, 'id' | 'createdAt'>) => {
-    const imageUrl = await vehicleApiService.getVehicleImage(data.brand, data.model);
+  const addVehicle = async (data: Omit<Vehicle, "id" | "createdAt">) => {
+    const imageUrl = await vehicleApiService.getVehicleImage(
+      data.brand,
+      data.model,
+    );
 
     const newVehicle: Vehicle = {
       ...data,
       imageUrl,
-      id: uuidv4(),
+      id: Date.now().toString(),
       createdAt: new Date().toISOString(),
     };
 
@@ -49,7 +57,7 @@ export const VehiclesProvider = ({ children }: { children: React.ReactNode }) =>
 export const useVehicles = () => {
   const context = useContext(VehiclesContext);
   if (!context) {
-    throw new Error('useVehicles must be used within VehiclesProvider');
+    throw new Error("useVehicles must be used within VehiclesProvider");
   }
   return context;
 };

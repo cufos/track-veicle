@@ -1,20 +1,27 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Maintenance } from '../models/types';
-import { storageService } from '../services/storageService';
-import { notificationService } from '../services/notificationService';
-import { useSettings } from './SettingsContext';
-import { v4 as uuidv4 } from 'uuid';
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { Maintenance } from "../models/types";
+import { storageService } from "../services/storageService";
+import { notificationService } from "../services/notificationService";
+import { useSettings } from "./SettingsContext";
 
 interface MaintenancesContextProps {
   maintenances: Maintenance[];
   loadMaintenances: () => Promise<void>;
-  addMaintenance: (data: Omit<Maintenance, 'id' | 'createdAt'>) => Promise<void>;
+  addMaintenance: (
+    data: Omit<Maintenance, "id" | "createdAt">,
+  ) => Promise<void>;
   getMaintenancesByVehicle: (vehicleId: string) => Maintenance[];
 }
 
-const MaintenancesContext = createContext<MaintenancesContextProps | undefined>(undefined);
+const MaintenancesContext = createContext<MaintenancesContextProps | undefined>(
+  undefined,
+);
 
-export const MaintenancesProvider = ({ children }: { children: React.ReactNode }) => {
+export const MaintenancesProvider = ({
+  children,
+}: {
+  children: React.ReactNode;
+}) => {
   const [maintenances, setMaintenances] = useState<Maintenance[]>([]);
   const { globalReminderDays } = useSettings();
 
@@ -23,10 +30,12 @@ export const MaintenancesProvider = ({ children }: { children: React.ReactNode }
     setMaintenances(data);
   };
 
-  const addMaintenance = async (data: Omit<Maintenance, 'id' | 'createdAt'>) => {
+  const addMaintenance = async (
+    data: Omit<Maintenance, "id" | "createdAt">,
+  ) => {
     const newMaintenance: Maintenance = {
       ...data,
-      id: uuidv4(),
+      id: Date.now().toString(),
       createdAt: new Date().toISOString(),
     };
 
@@ -47,7 +56,7 @@ export const MaintenancesProvider = ({ children }: { children: React.ReactNode }
     const runNotificationCheck = async () => {
       await notificationService.checkAndNotify(
         maintenances,
-        globalReminderDays
+        globalReminderDays,
       );
     };
 
@@ -56,7 +65,12 @@ export const MaintenancesProvider = ({ children }: { children: React.ReactNode }
 
   return (
     <MaintenancesContext.Provider
-      value={{ maintenances, loadMaintenances, addMaintenance, getMaintenancesByVehicle }}
+      value={{
+        maintenances,
+        loadMaintenances,
+        addMaintenance,
+        getMaintenancesByVehicle,
+      }}
     >
       {children}
     </MaintenancesContext.Provider>
@@ -66,7 +80,7 @@ export const MaintenancesProvider = ({ children }: { children: React.ReactNode }
 export const useMaintenances = () => {
   const context = useContext(MaintenancesContext);
   if (!context) {
-    throw new Error('useMaintenances must be used within MaintenancesProvider');
+    throw new Error("useMaintenances must be used within MaintenancesProvider");
   }
   return context;
 };

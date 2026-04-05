@@ -1,24 +1,28 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { storageService } from '../services/storageService';
+import React, { createContext, useContext, useEffect, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { storageService } from "../services/storageService";
 
 interface SettingsContextProps {
   globalReminderDays: number;
   setGlobalReminderDays: (days: number) => void;
-  theme: 'light' | 'dark';
-  setTheme: (theme: 'light' | 'dark') => void;
+  theme: "light" | "dark";
+  setTheme: (theme: "light" | "dark") => void;
   resetAppData: () => Promise<void>;
 }
 
 const SettingsContext = createContext<SettingsContextProps | undefined>(
-  undefined
+  undefined,
 );
 
-const SETTINGS_KEY = 'APP_SETTINGS';
+const SETTINGS_KEY = "APP_SETTINGS";
 
-export const SettingsProvider = ({ children }: { children: React.ReactNode }) => {
+export const SettingsProvider = ({
+  children,
+}: {
+  children: React.ReactNode;
+}) => {
   const [globalReminderDays, setGlobalReminderDays] = useState(7);
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [theme, setTheme] = useState<"light" | "dark">("light");
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -40,11 +44,11 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     const saveSettings = async () => {
       await AsyncStorage.setItem(
         SETTINGS_KEY,
-        JSON.stringify({ globalReminderDays, theme })
+        JSON.stringify({ globalReminderDays, theme }),
       );
     };
     saveSettings();
-  }, [globalReminderDays]);
+  }, [globalReminderDays, theme]);
 
   const resetAppData = async () => {
     await storageService.clearAll();
@@ -69,7 +73,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
 export const useSettings = () => {
   const context = useContext(SettingsContext);
   if (!context) {
-    throw new Error('useSettings must be used within SettingsProvider');
+    throw new Error("useSettings must be used within SettingsProvider");
   }
   return context;
 };
