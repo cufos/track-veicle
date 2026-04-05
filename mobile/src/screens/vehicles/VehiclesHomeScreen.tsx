@@ -8,11 +8,12 @@ import {
   Image,
 } from "react-native";
 import { useVehicles } from "../../context/VehiclesContext";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useTheme } from "@react-navigation/native";
 
 export default function VehiclesHomeScreen() {
   const { vehicles } = useVehicles();
   const navigation = useNavigation<any>();
+  const { colors, dark } = useTheme();
 
   return (
     <View style={styles.container}>
@@ -23,16 +24,26 @@ export default function VehiclesHomeScreen() {
           <View style={styles.emptyContainer}>
             <Image
               source={require("../../../assets/car-wash.png")}
-              style={styles.emptyImage}
+              style={[
+                styles.emptyImage,
+                { tintColor: dark ? "#FFFFFF" : "#000000" },
+              ]}
               resizeMode="contain"
             />
-            <Text style={styles.emptyTitle}>
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>
               Bienvenido a tu garaje personal
             </Text>
-            <Text style={styles.emptySubtitle}>
+            <Text style={[styles.emptySubtitle, { color: colors.text }]}>
               Agrega tu primer vehículo para que no te olvides ninguna
               manutención.
             </Text>
+
+            <TouchableOpacity
+              style={[styles.button, { marginTop: 20 }]}
+              onPress={() => navigation.navigate("AddVehicle")}
+            >
+              <Text style={styles.buttonText}>+ Agregar Vehículo</Text>
+            </TouchableOpacity>
           </View>
         }
         renderItem={({ item }) => (
@@ -42,23 +53,57 @@ export default function VehiclesHomeScreen() {
               navigation.navigate("VehicleDetail", { vehicle: item })
             }
           >
-            {item.imageUrl && (
-              <Image source={{ uri: item.imageUrl }} style={styles.image} />
+            {item.imageUrl === "local-van" && (
+              <Image
+                source={require("../../../assets/van.png")}
+                style={styles.image}
+                resizeMode="contain"
+              />
             )}
-            <Text style={styles.title}>{item.name}</Text>
-            <Text>
+
+            {item.imageUrl === "local-motor" && (
+              <Image
+                source={require("../../../assets/motor.png")}
+                style={styles.image}
+                resizeMode="contain"
+              />
+            )}
+
+            {item.imageUrl === "local-default" && (
+              <Image
+                source={require("../../../assets/carro_defecto.png")}
+                style={styles.image}
+                resizeMode="contain"
+              />
+            )}
+
+            {item.imageUrl &&
+              item.imageUrl !== "local-van" &&
+              item.imageUrl !== "local-motor" && (
+                <Image
+                  source={{ uri: item.imageUrl }}
+                  style={styles.image}
+                  resizeMode="cover"
+                />
+              )}
+            <Text style={[styles.title, { color: colors.text }]}>
+              {item.name}
+            </Text>
+            <Text style={{ color: colors.text }}>
               {item.brand} {item.model} - {item.year}
             </Text>
           </TouchableOpacity>
         )}
       />
 
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => navigation.navigate("AddVehicle")}
-      >
-        <Text style={styles.buttonText}>+ Agregar Vehículo</Text>
-      </TouchableOpacity>
+      {vehicles.length < 3 && (
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => navigation.navigate("AddVehicle")}
+        >
+          <Text style={styles.buttonText}>+ Agregar Vehículo</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -73,11 +118,17 @@ const styles = StyleSheet.create({
   },
   image: {
     width: "100%",
-    height: 150,
+    height: 120,
     borderRadius: 8,
     marginBottom: 10,
   },
   title: { fontSize: 16, fontWeight: "bold" },
+
+  headerImage: {
+    width: "100%",
+    height: 120,
+    marginBottom: 10,
+  },
   emptyContainer: {
     flex: 1,
     alignItems: "center",

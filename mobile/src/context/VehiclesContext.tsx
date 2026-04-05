@@ -7,6 +7,7 @@ interface VehiclesContextProps {
   vehicles: Vehicle[];
   loadVehicles: () => Promise<void>;
   addVehicle: (data: Omit<Vehicle, "id" | "createdAt">) => Promise<void>;
+  deleteVehicle: (id: string) => Promise<void>;
 }
 
 const VehiclesContext = createContext<VehiclesContextProps | undefined>(
@@ -26,10 +27,32 @@ export const VehiclesProvider = ({
   };
 
   const addVehicle = async (data: Omit<Vehicle, "id" | "createdAt">) => {
-    const imageUrl = await vehicleApiService.getVehicleImage(
-      data.brand,
-      data.model,
-    );
+    // ✅ Limitar máximo 3 vehículos
+    if (vehicles.length >= 3) {
+      console.warn("Máximo de 3 vehículos alcanzado");
+      return;
+    }
+
+    let imageUrl: string | undefined;
+
+    // Si es van o motor no llamamos a la API
+    if (data.vehicleType === "van") {
+      imageUrl = "local-van";
+    } else if (data.vehicleType === "motor") {
+      imageUrl = "local-motor";
+    } else {
+      const images = await vehicleApiService.getVehicleImages(
+        data.brand,
+        data.model,
+        data.year,
+      );
+
+      if (images.length > 0) {
+        imageUrl = images[0]; // primera imagen
+      } else {
+        imageUrl = vehicleApiService.getFallbackImage();
+      }
+    }
 
     const newVehicle: Vehicle = {
       ...data,
@@ -47,8 +70,16 @@ export const VehiclesProvider = ({
     loadVehicles();
   }, []);
 
+  const deleteVehicle = async (id: string) => {
+    const updated = vehicles.filter((v) => v.id !== id);
+    setVehicles(updated);
+    await storageService.saveVehicles(updated);
+  };
+
   return (
-    <VehiclesContext.Provider value={{ vehicles, loadVehicles, addVehicle }}>
+    <VehiclesContext.Provider
+      value={{ vehicles, loadVehicles, addVehicle, deleteVehicle }}
+    >
       {children}
     </VehiclesContext.Provider>
   );

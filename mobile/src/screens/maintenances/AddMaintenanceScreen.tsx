@@ -1,7 +1,22 @@
-import React, { useState } from 'react';
-import { View, TextInput, TouchableOpacity, Text, StyleSheet } from 'react-native';
-import { useMaintenances } from '../../context/MaintenancesContext';
-import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
+import React, { useState } from "react";
+import {
+  View,
+  TextInput,
+  TouchableOpacity,
+  Text,
+  StyleSheet,
+  Modal,
+  TouchableWithoutFeedback,
+  ScrollView,
+} from "react-native";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { useMaintenances } from "../../context/MaintenancesContext";
+import {
+  RouteProp,
+  useNavigation,
+  useRoute,
+  useTheme,
+} from "@react-navigation/native";
 
 type ParamList = {
   AddMaintenance: { vehicleId: string };
@@ -10,71 +25,163 @@ type ParamList = {
 export default function AddMaintenanceScreen() {
   const { addMaintenance } = useMaintenances();
   const navigation = useNavigation<any>();
-  const route = useRoute<RouteProp<ParamList, 'AddMaintenance'>>();
+  const route = useRoute<RouteProp<ParamList, "AddMaintenance">>();
   const { vehicleId } = route.params;
+  const { colors, dark } = useTheme();
 
-  const [title, setTitle] = useState('');
-  const [dueDate, setDueDate] = useState('');
-  const [reminderDaysBefore, setReminderDaysBefore] = useState('7');
+  const [title, setTitle] = useState("");
+  const [dueDate, setDueDate] = useState<Date>(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [reminderDaysBefore, setReminderDaysBefore] = useState("7");
 
   const handleSave = async () => {
-    if (!title || !dueDate) return;
+    const days = Math.max(1, Number(reminderDaysBefore));
+
+    if (!title) return;
 
     await addMaintenance({
       vehicleId,
       title,
-      dueDate,
-      reminderDaysBefore: Number(reminderDaysBefore),
-      type: 'date',
-      notes: '',
+      dueDate: dueDate.toISOString().split("T")[0],
+      reminderDaysBefore: days,
+      type: "date",
+      notes: "",
     });
 
     navigation.goBack();
   };
 
   return (
-    <View style={styles.container}>
-      <TextInput
-        placeholder="Título"
-        style={styles.input}
-        value={title}
-        onChangeText={setTitle}
-      />
-      <TextInput
-        placeholder="Fecha vencimiento (YYYY-MM-DD)"
-        style={styles.input}
-        value={dueDate}
-        onChangeText={setDueDate}
-      />
-      <TextInput
-        placeholder="Días antes para alerta"
-        style={styles.input}
-        value={reminderDaysBefore}
-        onChangeText={setReminderDaysBefore}
-        keyboardType="numeric"
-      />
+    <>
+      <ScrollView
+        contentContainerStyle={[
+          styles.container,
+          { backgroundColor: colors.background },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
+        <TextInput
+          placeholder="Título"
+          placeholderTextColor={dark ? "#aaa" : "#666"}
+          style={[
+            styles.input,
+            {
+              color: colors.text,
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+            },
+          ]}
+          value={title}
+          onChangeText={setTitle}
+        />
 
-      <TouchableOpacity style={styles.button} onPress={handleSave}>
-        <Text style={styles.buttonText}>Guardar Mantenimiento</Text>
-      </TouchableOpacity>
-    </View>
+        <TouchableOpacity
+          onPress={() => setShowDatePicker(true)}
+          style={[
+            styles.input,
+            {
+              justifyContent: "center",
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+            },
+          ]}
+        >
+          <Text style={{ color: colors.text }}>
+            {dueDate.toISOString().split("T")[0]}
+          </Text>
+        </TouchableOpacity>
+
+        <TextInput
+          placeholder="Días antes para alerta"
+          placeholderTextColor={dark ? "#aaa" : "#666"}
+          style={[
+            styles.input,
+            {
+              color: colors.text,
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+            },
+          ]}
+          value={reminderDaysBefore}
+          onChangeText={(text) => {
+            const value = Number(text);
+            if (value < 1) {
+              setReminderDaysBefore("1");
+            } else {
+              setReminderDaysBefore(text);
+            }
+          }}
+          keyboardType="numeric"
+        />
+
+        <TouchableOpacity style={styles.button} onPress={handleSave}>
+          <Text style={styles.buttonText}>Guardar Mantenimiento</Text>
+        </TouchableOpacity>
+      </ScrollView>
+
+      {/* Modal Calendar */}
+      <Modal
+        visible={showDatePicker}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowDatePicker(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setShowDatePicker(false)}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback>
+              <View
+                style={[styles.modalContent, { backgroundColor: colors.card }]}
+              >
+                <DateTimePicker
+                  value={dueDate}
+                  mode="date"
+                  display="inline"
+                  themeVariant={dark ? "dark" : "light"}
+                  textColor={dark ? "#FFFFFF" : "#000000"}
+                  onChange={(event, selectedDate) => {
+                    if (selectedDate) {
+                      setDueDate(selectedDate);
+                    }
+                  }}
+                />
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
+  container: {
+    padding: 16,
+    paddingBottom: 40,
+  },
   input: {
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: "#ccc",
     padding: 12,
     borderRadius: 8,
     marginBottom: 10,
   },
   button: {
-    backgroundColor: '#007AFF',
+    backgroundColor: "#007AFF",
     padding: 15,
     borderRadius: 8,
-    alignItems: 'center',
+    alignItems: "center",
+    marginTop: 10,
   },
-  buttonText: { color: 'white', fontWeight: 'bold' },
+  buttonText: { color: "white", fontWeight: "bold" },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    borderRadius: 12,
+    padding: 16,
+    width: "90%",
+  },
 });

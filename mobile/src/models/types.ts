@@ -4,6 +4,13 @@ export interface Vehicle {
   brand: string;
   model: string;
   year: number;
+
+  fuelType: "gasolina" | "diesel" | "electrico" | "hibrido";
+  vehicleType: "carro" | "motor" | "van" | "otro";
+
+  purchaseDate?: string;
+  km?: number;
+
   imageUrl?: string;
   createdAt: string;
 }
