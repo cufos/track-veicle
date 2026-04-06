@@ -13,8 +13,15 @@ export const vehicleApiService = {
     year?: number,
   ): Promise<string[]> {
     try {
-      const apiKey = process.env.IMAGES_CAR_KEY;
-      if (!apiKey) return [];
+      // ✅ En Expo las variables deben comenzar con EXPO_PUBLIC_
+      const apiKey =
+        process.env.EXPO_PUBLIC_IMAGES_CAR_KEY ||
+        process.env.IMAGES_CAR_KEY;
+
+      if (!apiKey) {
+        console.warn("API KEY not found");
+        return [];
+      }
 
       const cacheKey = `${brand}-${model}-${year || ""}`.toLowerCase();
 
@@ -28,18 +35,20 @@ export const vehicleApiService = {
       const modelEncoded = encodeURIComponent(model);
       const yearParam = year ? `&year=${year}` : "";
 
-      const url = `https://carimagesapi.com/api/v1/images?make=${make}&model=${modelEncoded}${yearParam}&api_key=${apiKey}`;
+      // ✅ Usar endpoint oficial signed-url
+      const url = `https://carimagesapi.com/api/v1/signed-url?api_key=${apiKey}&make=${make}&model=${modelEncoded}${yearParam}`;
 
       const response = await fetch(url);
-      if (!response.ok) return [];
+
+      if (!response.ok) {
+        console.warn("CarImagesAPI error:", response.status);
+        return [];
+      }
 
       const data = await response.json();
 
-      // ✅ Soporte para múltiples imágenes
-      const images: string[] =
-        data?.data?.map((item: any) => item.image || item.url).filter(Boolean) ||
-        data?.images ||
-        [];
+      // ✅ La API devuelve: { url: "https://..." }
+      const images: string[] = data?.url ? [data.url] : [];
 
       // ✅ Guardar en cache
       imageCache[cacheKey] = {

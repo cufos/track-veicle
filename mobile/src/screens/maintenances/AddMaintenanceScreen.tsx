@@ -8,6 +8,7 @@ import {
   Modal,
   TouchableWithoutFeedback,
   ScrollView,
+  Alert,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useMaintenances } from "../../context/MaintenancesContext";
@@ -17,36 +18,53 @@ import {
   useRoute,
   useTheme,
 } from "@react-navigation/native";
+import { Maintenance } from "../../models/types";
 
 type ParamList = {
-  AddMaintenance: { vehicleId: string };
+  AddMaintenance: { vehicleId: string; maintenance?: Maintenance };
 };
 
 export default function AddMaintenanceScreen() {
-  const { addMaintenance } = useMaintenances();
+  const { addMaintenance, editMaintenance, deleteMaintenance } =
+    useMaintenances();
   const navigation = useNavigation<any>();
   const route = useRoute<RouteProp<ParamList, "AddMaintenance">>();
-  const { vehicleId } = route.params;
+  const { vehicleId, maintenance } = route.params;
   const { colors, dark } = useTheme();
 
-  const [title, setTitle] = useState("");
-  const [dueDate, setDueDate] = useState<Date>(new Date());
+  const editing = !!maintenance;
+
+  const [title, setTitle] = useState(maintenance?.title || "");
+  const [dueDate, setDueDate] = useState<Date>(
+    maintenance ? new Date(maintenance.dueDate) : new Date(),
+  );
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [reminderDaysBefore, setReminderDaysBefore] = useState("7");
+  const [reminderDaysBefore, setReminderDaysBefore] = useState(
+    maintenance ? String(maintenance.reminderDaysBefore) : "7",
+  );
 
   const handleSave = async () => {
     const days = Math.max(1, Number(reminderDaysBefore));
 
     if (!title) return;
 
-    await addMaintenance({
-      vehicleId,
-      title,
-      dueDate: dueDate.toISOString().split("T")[0],
-      reminderDaysBefore: days,
-      type: "date",
-      notes: "",
-    });
+    if (editing && maintenance) {
+      await editMaintenance({
+        ...maintenance,
+        title,
+        dueDate: dueDate.toISOString().split("T")[0],
+        reminderDaysBefore: days,
+      });
+    } else {
+      await addMaintenance({
+        vehicleId,
+        title,
+        dueDate: dueDate.toISOString().split("T")[0],
+        reminderDaysBefore: days,
+        type: "date",
+        notes: "",
+      });
+    }
 
     navigation.goBack();
   };
@@ -115,8 +133,35 @@ export default function AddMaintenanceScreen() {
         />
 
         <TouchableOpacity style={styles.button} onPress={handleSave}>
-          <Text style={styles.buttonText}>Guardar Mantenimiento</Text>
+          <Text style={styles.buttonText}>
+            {editing ? "Actualizar Mantenimiento" : "Guardar Mantenimiento"}
+          </Text>
         </TouchableOpacity>
+
+        {editing && maintenance && (
+          <TouchableOpacity
+            style={[styles.button, { backgroundColor: "#FF3B30" }]}
+            onPress={() => {
+              Alert.alert(
+                "Eliminar mantenimiento",
+                "¿Estás seguro que quieres eliminar este mantenimiento?",
+                [
+                  { text: "Cancelar", style: "cancel" },
+                  {
+                    text: "Eliminar",
+                    style: "destructive",
+                    onPress: async () => {
+                      await deleteMaintenance(maintenance.id);
+                      navigation.goBack();
+                    },
+                  },
+                ],
+              );
+            }}
+          >
+            <Text style={styles.buttonText}>Eliminar Mantenimiento</Text>
+          </TouchableOpacity>
+        )}
       </ScrollView>
 
       {/* Modal Calendar */}

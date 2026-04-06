@@ -10,6 +10,8 @@ interface MaintenancesContextProps {
   addMaintenance: (
     data: Omit<Maintenance, "id" | "createdAt">,
   ) => Promise<void>;
+  editMaintenance: (updated: Maintenance) => Promise<void>;
+  deleteMaintenance: (id: string) => Promise<void>;
   getMaintenancesByVehicle: (vehicleId: string) => Maintenance[];
 }
 
@@ -44,6 +46,20 @@ export const MaintenancesProvider = ({
     await storageService.saveMaintenances(updated);
   };
 
+  const editMaintenance = async (updatedMaintenance: Maintenance) => {
+    const updated = maintenances.map((m) =>
+      m.id === updatedMaintenance.id ? updatedMaintenance : m,
+    );
+    setMaintenances(updated);
+    await storageService.saveMaintenances(updated);
+  };
+
+  const deleteMaintenance = async (id: string) => {
+    const updated = maintenances.filter((m) => m.id !== id);
+    setMaintenances(updated);
+    await storageService.saveMaintenances(updated);
+  };
+
   const getMaintenancesByVehicle = (vehicleId: string) => {
     return maintenances.filter((m) => m.vehicleId === vehicleId);
   };
@@ -69,6 +85,8 @@ export const MaintenancesProvider = ({
         maintenances,
         loadMaintenances,
         addMaintenance,
+        editMaintenance,
+        deleteMaintenance,
         getMaintenancesByVehicle,
       }}
     >

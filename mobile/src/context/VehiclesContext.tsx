@@ -7,6 +7,7 @@ interface VehiclesContextProps {
   vehicles: Vehicle[];
   loadVehicles: () => Promise<void>;
   addVehicle: (data: Omit<Vehicle, "id" | "createdAt">) => Promise<void>;
+  editVehicle: (updatedVehicle: Vehicle) => Promise<void>;
   deleteVehicle: (id: string) => Promise<void>;
 }
 
@@ -23,7 +24,35 @@ export const VehiclesProvider = ({
 
   const loadVehicles = async () => {
     const data = await storageService.getVehicles();
-    setVehicles(data);
+
+    // ✅ Al iniciar la app, aseguramos que los vehículos tipo "carro"
+    // tengan imagen cargada desde la API si no la tienen
+    const updatedVehicles = await Promise.all(
+      data.map(async (vehicle) => {
+        // ✅ Para TODOS los vehículos, si la imagen NO es una URL remota válida,
+        // llamamos a la API para obtenerla
+        if (!vehicle.imageUrl || !vehicle.imageUrl.startsWith("http")) {
+          const images = await vehicleApiService.getVehicleImages(
+            vehicle.brand,
+            vehicle.model,
+            vehicle.year,
+          );
+
+          return {
+            ...vehicle,
+            imageUrl:
+              images.length > 0
+                ? images[0]
+                : vehicleApiService.getFallbackImage(),
+          };
+        }
+
+        return vehicle;
+      }),
+    );
+
+    setVehicles(updatedVehicles);
+    await storageService.saveVehicles(updatedVehicles);
   };
 
   const addVehicle = async (data: Omit<Vehicle, "id" | "createdAt">) => {
@@ -70,6 +99,14 @@ export const VehiclesProvider = ({
     loadVehicles();
   }, []);
 
+  const editVehicle = async (updatedVehicle: Vehicle) => {
+    const updated = vehicles.map((v) =>
+      v.id === updatedVehicle.id ? updatedVehicle : v,
+    );
+    setVehicles(updated);
+    await storageService.saveVehicles(updated);
+  };
+
   const deleteVehicle = async (id: string) => {
     const updated = vehicles.filter((v) => v.id !== id);
     setVehicles(updated);
@@ -78,7 +115,7 @@ export const VehiclesProvider = ({
 
   return (
     <VehiclesContext.Provider
-      value={{ vehicles, loadVehicles, addVehicle, deleteVehicle }}
+      value={{ vehicles, loadVehicles, addVehicle, editVehicle, deleteVehicle }}
     >
       {children}
     </VehiclesContext.Provider>

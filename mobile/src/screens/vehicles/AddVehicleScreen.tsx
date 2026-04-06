@@ -9,47 +9,76 @@ import {
   Modal,
   TouchableWithoutFeedback,
 } from "react-native";
-import { Picker } from "@react-native-picker/picker";
+import ModalSelector from "react-native-modal-selector";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useVehicles } from "../../context/VehiclesContext";
-import { useNavigation, useTheme } from "@react-navigation/native";
+import { useNavigation, useTheme, useRoute } from "@react-navigation/native";
+import { Vehicle } from "../../models/types";
+
+type RouteParams = {
+  vehicle?: Vehicle;
+};
 
 export default function AddVehicleScreen() {
-  const { addVehicle } = useVehicles();
+  const { addVehicle, editVehicle } = useVehicles();
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
+  const editingVehicle: Vehicle | undefined = route.params?.vehicle;
   const { colors, dark } = useTheme();
 
-  const [name, setName] = useState("");
-  const [brand, setBrand] = useState("");
-  const [model, setModel] = useState("");
-  const [year, setYear] = useState("");
+  const [name, setName] = useState(editingVehicle?.name || "");
+  const [brand, setBrand] = useState(editingVehicle?.brand || "");
+  const [model, setModel] = useState(editingVehicle?.model || "");
+  const [year, setYear] = useState(
+    editingVehicle ? String(editingVehicle.year) : "",
+  );
 
   const [fuelType, setFuelType] = useState<
     "gasolina" | "diesel" | "electrico" | "hibrido"
-  >("gasolina");
+  >(editingVehicle?.fuelType || "gasolina");
 
   const [vehicleType, setVehicleType] = useState<
     "carro" | "motor" | "van" | "otro"
-  >("carro");
+  >(editingVehicle?.vehicleType || "carro");
 
-  const [purchaseDate, setPurchaseDate] = useState<Date>(new Date());
+  const [purchaseDate, setPurchaseDate] = useState<Date>(
+    editingVehicle?.purchaseDate
+      ? new Date(editingVehicle.purchaseDate)
+      : new Date(),
+  );
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [km, setKm] = useState("0");
+  const [km, setKm] = useState(
+    editingVehicle?.km ? String(editingVehicle.km) : "",
+  );
 
   const handleSave = async () => {
     if (!name || !brand || !model || !year) return;
 
-    await addVehicle({
-      name,
-      brand,
-      model,
-      year: Number(year),
-      fuelType,
-      vehicleType,
-      purchaseDate: purchaseDate.toISOString(),
-      km: km ? Number(km) : 0,
-      imageUrl: undefined,
-    });
+    if (editingVehicle) {
+      await editVehicle({
+        ...editingVehicle,
+        name,
+        brand,
+        model,
+        year: Number(year),
+        fuelType,
+        vehicleType,
+        purchaseDate: purchaseDate.toISOString(),
+        km: km ? Number(km) : 0,
+      });
+    } else {
+      await addVehicle({
+        name,
+        brand,
+        model,
+        year: Number(year),
+        fuelType,
+        vehicleType,
+        purchaseDate: purchaseDate.toISOString(),
+        km: km ? Number(km) : 0,
+        imageUrl: undefined,
+      });
+    }
 
     navigation.goBack();
   };
@@ -63,6 +92,11 @@ export default function AddVehicleScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
+        <Text
+          style={[styles.sectionTitle, { color: colors.text, marginTop: 24 }]}
+        >
+          Información General
+        </Text>
         <TextInput
           placeholder="Nombre"
           placeholderTextColor={dark ? "#aaa" : "#666"}
@@ -124,56 +158,74 @@ export default function AddVehicleScreen() {
           keyboardType="numeric"
         />
 
-        <Text style={[styles.label, { color: colors.text }]}>
-          Tipo de combustible
-        </Text>
+        <View style={styles.row}>
+          <Text style={[styles.label, { color: colors.text }]}>
+            Tipo de combustible
+          </Text>
 
-        <View
-          style={[
-            styles.selectContainer,
-            {
+          <ModalSelector
+            data={[
+              { key: "gasolina", label: "Gasolina" },
+              { key: "diesel", label: "Diesel" },
+              { key: "electrico", label: "Eléctrico" },
+              { key: "hibrido", label: "Híbrido" },
+            ]}
+            initValue="Seleccionar combustible"
+            onChange={(option) =>
+              setFuelType(
+                option.key as "gasolina" | "diesel" | "electrico" | "hibrido",
+              )
+            }
+            selectStyle={{
+              ...styles.selectorButton,
               backgroundColor: colors.card,
               borderColor: colors.border,
-            },
-          ]}
-        >
-          <Picker
-            selectedValue={fuelType}
-            onValueChange={(itemValue) => setFuelType(itemValue)}
-            dropdownIconColor={colors.text}
-            style={{ color: colors.text }}
+            }}
+            selectTextStyle={{ color: colors.text }}
+            optionTextStyle={{ color: dark ? "#fff" : "#000" }}
+            cancelText="Cancelar"
           >
-            <Picker.Item label="Gasolina" value="gasolina" />
-            <Picker.Item label="Diesel" value="diesel" />
-            <Picker.Item label="Eléctrico" value="electrico" />
-            <Picker.Item label="Híbrido" value="hibrido" />
-          </Picker>
+            <View style={styles.selectorContent}>
+              <Text style={{ color: colors.text, fontWeight: "600" }}>
+                {fuelType.charAt(0).toUpperCase() + fuelType.slice(1)}
+              </Text>
+              <Text style={{ color: colors.text, marginLeft: 6 }}>›</Text>
+            </View>
+          </ModalSelector>
         </View>
 
-        <Text style={[styles.label, { color: colors.text }]}>
-          Tipo de vehículo
-        </Text>
+        <View style={styles.row}>
+          <Text style={[styles.label, { color: colors.text }]}>
+            Tipo de vehículo
+          </Text>
 
-        <View
-          style={[
-            styles.selectContainer,
-            {
+          <ModalSelector
+            data={[
+              { key: "carro", label: "Carro" },
+              { key: "motor", label: "Motor" },
+              { key: "van", label: "Van" },
+              { key: "otro", label: "Otro" },
+            ]}
+            initValue="Seleccionar tipo"
+            onChange={(option) =>
+              setVehicleType(option.key as "carro" | "motor" | "van" | "otro")
+            }
+            selectStyle={{
+              ...styles.selectorButton,
               backgroundColor: colors.card,
               borderColor: colors.border,
-            },
-          ]}
-        >
-          <Picker
-            selectedValue={vehicleType}
-            onValueChange={(itemValue) => setVehicleType(itemValue)}
-            dropdownIconColor={colors.text}
-            style={{ color: colors.text }}
+            }}
+            selectTextStyle={{ color: colors.text }}
+            optionTextStyle={{ color: dark ? "#fff" : "#000" }}
+            cancelText="Cancelar"
           >
-            <Picker.Item label="Carro" value="carro" />
-            <Picker.Item label="Motor" value="motor" />
-            <Picker.Item label="Van" value="van" />
-            <Picker.Item label="Otro" value="otro" />
-          </Picker>
+            <View style={styles.selectorContent}>
+              <Text style={{ color: colors.text, fontWeight: "600" }}>
+                {vehicleType.charAt(0).toUpperCase() + vehicleType.slice(1)}
+              </Text>
+              <Text style={{ color: colors.text, marginLeft: 6 }}>›</Text>
+            </View>
+          </ModalSelector>
         </View>
 
         <Text
@@ -199,7 +251,7 @@ export default function AddVehicleScreen() {
         </TouchableOpacity>
 
         <TextInput
-          placeholder="Kilómetros"
+          placeholder="Kilómetros (opcional)"
           placeholderTextColor={dark ? "#aaa" : "#666"}
           value={km}
           onChangeText={setKm}
@@ -265,11 +317,25 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 10,
   },
-  selectContainer: {
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 14,
+  },
+  selectorButton: {
     borderWidth: 1,
     borderRadius: 8,
-    marginBottom: 10,
-    paddingHorizontal: 4,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    minWidth: 130,
+    backgroundColor: "#00000010",
+    justifyContent: "center",
+  },
+  selectorContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   button: {
     backgroundColor: "#007AFF",
