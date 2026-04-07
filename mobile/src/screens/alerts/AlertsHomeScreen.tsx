@@ -28,7 +28,20 @@ export default function AlertsHomeScreen() {
   const { colors } = useTheme();
   const navigation = useNavigation<any>();
   const route = useRoute<RouteProp<ParamList, "Alerts">>();
-  const vehicleIdFilter = route.params?.vehicleId;
+  const vehicleIdFilter = route.params?.vehicleId ?? null;
+
+  // ✅ Si el usuario toca directamente el TAB de Alertas,
+  // limpiamos el filtro anterior.
+  // Pero si viene desde "Ver todos", NO lo limpiamos.
+  React.useEffect(() => {
+    const parent = navigation.getParent();
+
+    const unsubscribe = parent?.addListener("tabPress", () => {
+      navigation.setParams({ vehicleId: undefined });
+    });
+
+    return unsubscribe;
+  }, [navigation]);
 
   const [filter, setFilter] = useState<"all" | "expired" | "upcoming">("all");
 

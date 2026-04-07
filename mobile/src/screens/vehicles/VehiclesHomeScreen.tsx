@@ -43,10 +43,7 @@ export default function VehiclesHomeScreen() {
       .filter((m) => m.vehicleId === selectedVehicle.id)
       .map((m) => ({
         ...m,
-        status: getMaintenanceStatus(
-          m.dueDate,
-          m.reminderDaysBefore,
-        ),
+        status: getMaintenanceStatus(m.dueDate, m.reminderDaysBefore),
       }))
       .filter((m) => m.status === "expired" || m.status === "upcoming")
       .sort((a, b) => {
@@ -55,10 +52,7 @@ export default function VehiclesHomeScreen() {
         if (b.status === "expired" && a.status !== "expired") return 1;
 
         // Luego por fecha más próxima
-        return (
-          new Date(a.dueDate).getTime() -
-          new Date(b.dueDate).getTime()
-        );
+        return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
       });
 
   return (
@@ -66,12 +60,15 @@ export default function VehiclesHomeScreen() {
       <FlatList
         data={vehicles}
         keyExtractor={(item) => item.id}
-        horizontal={Platform.OS !== "web"}
-        pagingEnabled={Platform.OS !== "web"}
+        horizontal={true}
+        pagingEnabled={true}
         showsHorizontalScrollIndicator={false}
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={viewabilityConfig}
-        contentContainerStyle={{ paddingVertical: 10 }}
+        contentContainerStyle={{ paddingVertical: 0 }}
+        style={{ flexGrow: 0 }}
+        snapToInterval={SCREEN_WIDTH}
+        decelerationRate="fast"
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Image
@@ -101,8 +98,7 @@ export default function VehiclesHomeScreen() {
         renderItem={({ item }) => (
           <View
             style={{
-              width: Platform.OS === "web" ? "100%" : SCREEN_WIDTH,
-              alignItems: "center",
+              width: SCREEN_WIDTH,
             }}
           >
             <TouchableOpacity
@@ -111,7 +107,8 @@ export default function VehiclesHomeScreen() {
                 {
                   backgroundColor: colors.card,
                   borderColor: colors.border,
-                  width: Platform.OS === "web" ? "100%" : CARD_WIDTH,
+                  width: SCREEN_WIDTH - 32,
+                  marginHorizontal: 16,
                 },
               ]}
               onPress={() =>
@@ -163,6 +160,15 @@ export default function VehiclesHomeScreen() {
           </View>
         )}
       />
+
+      {/* Indicador simple tipo 1 / N */}
+      {vehicles.length > 1 && (
+        <View style={styles.pagination}>
+          <Text style={styles.counterText}>
+            {selectedIndex + 1} / {vehicles.length}
+          </Text>
+        </View>
+      )}
 
       {selectedVehicle && (
         <>
@@ -227,7 +233,7 @@ export default function VehiclesHomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
+  container: { flex: 1, paddingVertical: 16, paddingBottom: 100 },
   card: {
     padding: 12,
     borderRadius: 12,
@@ -269,12 +275,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 20,
+    marginTop: 8,
     marginBottom: 8,
+    paddingHorizontal: 16,
   },
   section: {
     padding: 16,
     borderRadius: 12,
+    marginHorizontal: 16,
   },
   sectionTitle: {
     fontSize: 16,
@@ -286,12 +294,27 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 8,
   },
+
+  pagination: {
+    alignItems: "center",
+    marginTop: 8,
+    marginBottom: 4,
+  },
+
+  counterText: {
+    fontSize: 12,
+    color: "#666",
+    fontWeight: "600",
+  },
   button: {
     backgroundColor: "#007AFF",
     padding: 15,
     borderRadius: 8,
     alignItems: "center",
-    marginTop: 10,
+    position: "absolute",
+    bottom: 20,
+    left: 16,
+    right: 16,
   },
   buttonText: { color: "white", fontWeight: "bold" },
 });
