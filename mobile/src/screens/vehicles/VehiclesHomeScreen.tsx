@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import {
   View,
   Text,
@@ -6,12 +6,16 @@ import {
   TouchableOpacity,
   StyleSheet,
   Image,
-  Animated,
+  Platform,
+  Dimensions,
 } from "react-native";
 import { useVehicles } from "../../context/VehiclesContext";
 import { useMaintenances } from "../../context/MaintenancesContext";
 import { getMaintenanceStatus } from "../../utils/dateUtils";
 import { useNavigation, useTheme } from "@react-navigation/native";
+
+const CARD_WIDTH = 220;
+const SCREEN_WIDTH = Dimensions.get("window").width;
 
 export default function VehiclesHomeScreen() {
   const { vehicles } = useVehicles();
@@ -19,34 +23,54 @@ export default function VehiclesHomeScreen() {
   const navigation = useNavigation<any>();
   const { colors, dark } = useTheme();
 
-  const [collapsed, setCollapsed] = useState(false);
-  const sectionHeight = useRef(new Animated.Value(0)).current;
-  const sectionOpacity = useRef(new Animated.Value(0)).current;
+  const [selectedIndex, setSelectedIndex] = useState(0);
 
-  useEffect(() => {
-    if (vehicles.length > 0) {
-      Animated.parallel([
-        Animated.timing(sectionHeight, {
-          toValue: collapsed ? 0 : 160,
-          duration: 300,
-          useNativeDriver: false,
-        }),
-        Animated.timing(sectionOpacity, {
-          toValue: collapsed ? 0 : 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]).start();
+  const selectedVehicle = vehicles[selectedIndex];
+
+  const viewabilityConfig = {
+    itemVisiblePercentThreshold: 50,
+  };
+
+  const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
+    if (viewableItems.length > 0) {
+      setSelectedIndex(viewableItems[0].index ?? 0);
     }
-  }, [collapsed, vehicles.length]);
+  }).current;
+
+  const vehicleMaintenances =
+    selectedVehicle &&
+    maintenances
+      .filter((m) => m.vehicleId === selectedVehicle.id)
+      .map((m) => ({
+        ...m,
+        status: getMaintenanceStatus(
+          m.dueDate,
+          m.reminderDaysBefore,
+        ),
+      }))
+      .filter((m) => m.status === "expired" || m.status === "upcoming")
+      .sort((a, b) => {
+        // 🔴 Vencidos primero
+        if (a.status === "expired" && b.status !== "expired") return -1;
+        if (b.status === "expired" && a.status !== "expired") return 1;
+
+        // Luego por fecha más próxima
+        return (
+          new Date(a.dueDate).getTime() -
+          new Date(b.dueDate).getTime()
+        );
+      });
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <FlatList
         data={vehicles}
         keyExtractor={(item) => item.id}
-        horizontal
+        horizontal={Platform.OS !== "web"}
+        pagingEnabled={Platform.OS !== "web"}
         showsHorizontalScrollIndicator={false}
+        onViewableItemsChanged={onViewableItemsChanged}
+        viewabilityConfig={viewabilityConfig}
         contentContainerStyle={{ paddingVertical: 10 }}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
@@ -74,132 +98,121 @@ export default function VehiclesHomeScreen() {
             </TouchableOpacity>
           </View>
         }
-        renderItem={({ item }) => {
-          const vehicleMaintenances = maintenances
-            .filter((m) => m.vehicleId === item.id)
-            .filter((m) => {
-              const status = getMaintenanceStatus(
-                m.dueDate,
-                m.reminderDaysBefore,
-              );
-              return status === "expired" || status === "upcoming";
-            })
-            .slice(0, 2);
-
-          return (
-            <View style={{ marginRight: 12, width: 220 }}>
-              <TouchableOpacity
-                style={[
-                  styles.card,
-                  {
-                    backgroundColor: colors.card,
-                    borderColor: colors.border,
-                  },
-                ]}
-                onPress={() =>
-                  navigation.navigate("VehicleDetail", { vehicle: item })
-                }
-              >
-                {item.imageUrl === "local-van" && (
-                  <Image
-                    source={require("../../../assets/van.png")}
-                    style={styles.image}
-                    resizeMode="contain"
-                  />
-                )}
-
-                {item.imageUrl === "local-motor" && (
-                  <Image
-                    source={require("../../../assets/motor.png")}
-                    style={styles.image}
-                    resizeMode="contain"
-                  />
-                )}
-
-                {item.imageUrl === "local-default" && (
-                  <Image
-                    source={require("../../../assets/carro_defecto.png")}
-                    style={styles.image}
-                    resizeMode="contain"
-                  />
-                )}
-
-                {item.imageUrl &&
-                  item.imageUrl !== "local-van" &&
-                  item.imageUrl !== "local-motor" &&
-                  item.imageUrl !== "local-default" && (
-                    <Image
-                      source={{ uri: item.imageUrl }}
-                      style={styles.image}
-                      resizeMode="contain"
-                    />
-                  )}
-                <Text style={[styles.title, { color: colors.text }]}>
-                  {item.name}
-                </Text>
-                <Text style={{ color: colors.text }}>
-                  {item.brand} {item.model} - {item.year}
-                </Text>
-              </TouchableOpacity>
-
-              {vehicleMaintenances.length > 0 && (
-                <View style={{ marginTop: 8 }}>
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      marginBottom: 6,
-                    }}
-                  >
-                    <Text
-                      style={{
-                        color: colors.text,
-                        fontWeight: "700",
-                        fontSize: 13,
-                      }}
-                    >
-                      Próximos mantenimientos
-                    </Text>
-
-                    <TouchableOpacity
-                      onPress={() =>
-                        navigation.navigate("Alertas", {
-                          screen: "AlertsHome",
-                          params: { vehicleId: item.id },
-                        })
-                      }
-                    >
-                      <Text style={{ color: "#007AFF", fontWeight: "600" }}>
-                        Ver todos
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  {vehicleMaintenances.map((m) => (
-                    <View
-                      key={m.id}
-                      style={[
-                        styles.maintenancePreviewCard,
-                        { borderColor: colors.border },
-                      ]}
-                    >
-                      <Text style={{ color: colors.text, fontWeight: "600" }}>
-                        {m.title}
-                      </Text>
-                      <Text style={{ color: colors.text, fontSize: 12 }}>
-                        Vence: {m.dueDate}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
+        renderItem={({ item }) => (
+          <View
+            style={{
+              width: Platform.OS === "web" ? "100%" : SCREEN_WIDTH,
+              alignItems: "center",
+            }}
+          >
+            <TouchableOpacity
+              style={[
+                styles.card,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                  width: Platform.OS === "web" ? "100%" : CARD_WIDTH,
+                },
+              ]}
+              onPress={() =>
+                navigation.navigate("VehicleDetail", { vehicle: item })
+              }
+            >
+              {item.imageUrl === "local-van" && (
+                <Image
+                  source={require("../../../assets/van.png")}
+                  style={styles.image}
+                  resizeMode="contain"
+                />
               )}
-            </View>
-          );
-        }}
+
+              {item.imageUrl === "local-motor" && (
+                <Image
+                  source={require("../../../assets/motor.png")}
+                  style={styles.image}
+                  resizeMode="contain"
+                />
+              )}
+
+              {item.imageUrl === "local-default" && (
+                <Image
+                  source={require("../../../assets/carro_defecto.png")}
+                  style={styles.image}
+                  resizeMode="contain"
+                />
+              )}
+
+              {item.imageUrl &&
+                item.imageUrl !== "local-van" &&
+                item.imageUrl !== "local-motor" &&
+                item.imageUrl !== "local-default" && (
+                  <Image
+                    source={{ uri: item.imageUrl }}
+                    style={styles.image}
+                    resizeMode="contain"
+                  />
+                )}
+
+              <Text style={[styles.title, { color: colors.text }]}>
+                {item.name}
+              </Text>
+              <Text style={{ color: colors.text }}>
+                {item.brand} {item.model} - {item.year}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
       />
 
-      {/* La sección global se elimina porque ahora se mostrará por vehículo */}
+      {selectedVehicle && (
+        <>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              Próximos mantenimientos
+            </Text>
+
+            <TouchableOpacity
+              onPress={() =>
+                navigation.navigate("Alertas", {
+                  screen: "AlertsHome",
+                  params: { vehicleId: selectedVehicle.id },
+                })
+              }
+            >
+              <Text style={{ color: "#007AFF", fontWeight: "600" }}>
+                Ver todos
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={[styles.section, { backgroundColor: colors.card }]}>
+            {!vehicleMaintenances ||
+              (vehicleMaintenances.length === 0 && (
+                <Text style={{ color: colors.text }}>
+                  No hay mantenimientos próximos
+                </Text>
+              ))}
+
+            {vehicleMaintenances &&
+              vehicleMaintenances.map((m) => (
+                <View
+                  key={m.id}
+                  style={[
+                    styles.maintenancePreviewCard,
+                    { borderColor: colors.border },
+                  ]}
+                >
+                  <Text style={{ color: colors.text, fontWeight: "600" }}>
+                    {m.title}
+                  </Text>
+                  <Text style={{ color: colors.text, fontSize: 12 }}>
+                    Vence: {m.dueDate}
+                  </Text>
+                </View>
+              ))}
+          </View>
+        </>
+      )}
 
       {vehicles.length < 3 && vehicles.length > 0 && (
         <TouchableOpacity
@@ -217,10 +230,9 @@ const styles = StyleSheet.create({
   container: { flex: 1, padding: 16 },
   card: {
     padding: 12,
-    marginRight: 12,
     borderRadius: 12,
     borderWidth: 1,
-    width: 220,
+    alignSelf: "center",
   },
   image: {
     width: "100%",
@@ -230,11 +242,6 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 16, fontWeight: "bold" },
 
-  headerImage: {
-    width: "100%",
-    height: 120,
-    marginBottom: 10,
-  },
   emptyContainer: {
     flex: 1,
     alignItems: "center",
@@ -258,24 +265,20 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: "#666",
   },
-  section: {
-    padding: 16,
-    borderRadius: 12,
-    marginTop: 20,
-  },
   sectionHeaderRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 10,
+    marginTop: 20,
+    marginBottom: 8,
+  },
+  section: {
+    padding: 16,
+    borderRadius: 12,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: "bold",
-  },
-  seeAllText: {
-    color: "#007AFF",
-    fontWeight: "600",
   },
   maintenancePreviewCard: {
     padding: 10,

@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
+  Platform,
 } from "react-native";
 import {
   RouteProp,
@@ -28,12 +29,15 @@ export default function VehicleDetailScreen() {
   const route = useRoute<RouteProp<ParamList, "VehicleDetail">>();
   const navigation = useNavigation<any>();
   const { vehicle } = route.params;
+  const { vehicles, deleteVehicle } = useVehicles();
   const { getMaintenancesByVehicle } = useMaintenances();
   const { globalReminderDays } = useSettings();
-  const { deleteVehicle } = useVehicles();
   const { colors } = useTheme();
 
-  const maintenances = getMaintenancesByVehicle(vehicle.id).sort((a, b) => {
+  const currentVehicle =
+    vehicles.find((v) => v.id === vehicle.id) || vehicle;
+
+  const maintenances = getMaintenancesByVehicle(currentVehicle.id).sort((a, b) => {
     const dateA = new Date(a.dueDate).getTime();
     const dateB = new Date(b.dueDate).getTime();
     return dateA - dateB;
@@ -57,7 +61,7 @@ export default function VehicleDetailScreen() {
 
   return (
     <ScrollView style={styles.container}>
-      {vehicle.imageUrl === "local-van" && (
+      {currentVehicle.imageUrl === "local-van" && (
         <Image
           source={require("../../../assets/van.png")}
           style={styles.image}
@@ -65,7 +69,7 @@ export default function VehicleDetailScreen() {
         />
       )}
 
-      {vehicle.imageUrl === "local-motor" && (
+      {currentVehicle.imageUrl === "local-motor" && (
         <Image
           source={require("../../../assets/motor.png")}
           style={styles.image}
@@ -73,7 +77,7 @@ export default function VehicleDetailScreen() {
         />
       )}
 
-      {vehicle.imageUrl === "local-default" && (
+      {currentVehicle.imageUrl === "local-default" && (
         <Image
           source={require("../../../assets/carro_defecto.png")}
           style={styles.image}
@@ -81,12 +85,12 @@ export default function VehicleDetailScreen() {
         />
       )}
 
-      {vehicle.imageUrl &&
-        vehicle.imageUrl !== "local-van" &&
-        vehicle.imageUrl !== "local-motor" &&
-        vehicle.imageUrl !== "local-default" && (
+      {currentVehicle.imageUrl &&
+        currentVehicle.imageUrl !== "local-van" &&
+        currentVehicle.imageUrl !== "local-motor" &&
+        currentVehicle.imageUrl !== "local-default" && (
           <Image
-            source={{ uri: vehicle.imageUrl }}
+            source={{ uri: currentVehicle.imageUrl }}
             style={styles.image}
             resizeMode="contain"
           />
@@ -94,7 +98,7 @@ export default function VehicleDetailScreen() {
 
       <View style={[styles.infoCard, { backgroundColor: colors.card }]}>
         <View style={styles.infoHeader}>
-          <Text style={styles.name}>{vehicle.name}</Text>
+          <Text style={styles.name}>{currentVehicle.name}</Text>
 
           <TouchableOpacity
             style={styles.inlineEditButton}
@@ -105,15 +109,15 @@ export default function VehicleDetailScreen() {
         </View>
 
         <Text>
-          {vehicle.brand} {vehicle.model}
+          {currentVehicle.brand} {currentVehicle.model}
         </Text>
-        <Text>Año: {vehicle.year}</Text>
+        <Text>Año: {currentVehicle.year}</Text>
       </View>
 
       <TouchableOpacity
         style={styles.addButton}
         onPress={() =>
-          navigation.navigate("AddMaintenance", { vehicleId: vehicle.id })
+          navigation.navigate("AddMaintenance", { vehicleId: currentVehicle.id })
         }
       >
         <Text style={styles.addButtonText}>+ Agregar Mantenimiento</Text>
@@ -121,22 +125,33 @@ export default function VehicleDetailScreen() {
 
       <TouchableOpacity
         style={styles.deleteButton}
-        onPress={() => {
-          Alert.alert(
-            "Eliminar vehículo",
-            "¿Estás seguro que quieres eliminar este vehículo? Esta acción no se puede deshacer.",
-            [
-              { text: "Cancelar", style: "cancel" },
-              {
-                text: "Eliminar",
-                style: "destructive",
-                onPress: async () => {
-                  await deleteVehicle(vehicle.id);
-                  navigation.goBack();
+        onPress={async () => {
+          if (Platform.OS === "web") {
+            const confirmed = window.confirm(
+              "¿Estás seguro que quieres eliminar este vehículo? Esta acción no se puede deshacer.",
+            );
+
+            if (confirmed) {
+              await deleteVehicle(currentVehicle.id);
+              navigation.goBack();
+            }
+          } else {
+            Alert.alert(
+              "Eliminar vehículo",
+              "¿Estás seguro que quieres eliminar este vehículo? Esta acción no se puede deshacer.",
+              [
+                { text: "Cancelar", style: "cancel" },
+                {
+                  text: "Eliminar",
+                  style: "destructive",
+                  onPress: async () => {
+                    await deleteVehicle(currentVehicle.id);
+                    navigation.goBack();
+                  },
                 },
-              },
-            ],
-          );
+              ],
+            );
+          }
         }}
       >
         <Text style={styles.deleteButtonText}>Eliminar Vehículo</Text>
@@ -182,7 +197,7 @@ export default function VehicleDetailScreen() {
                   <TouchableOpacity
                     onPress={() =>
                       navigation.navigate("AddMaintenance", {
-                        vehicleId: vehicle.id,
+                        vehicleId: currentVehicle.id,
                         maintenance: m,
                       })
                     }
@@ -232,7 +247,7 @@ export default function VehicleDetailScreen() {
                 <TouchableOpacity
                   onPress={() =>
                     navigation.navigate("AddMaintenance", {
-                      vehicleId: vehicle.id,
+                      vehicleId: currentVehicle.id,
                       maintenance: m,
                     })
                   }
