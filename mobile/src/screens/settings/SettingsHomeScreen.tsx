@@ -18,14 +18,22 @@ export default function SettingsHomeScreen() {
     setGlobalReminderDays,
     theme,
     setTheme,
+    kmWarningThreshold,
+    setKmWarningThreshold,
+    kmCriticalThreshold,
+    setKmCriticalThreshold,
     resetAppData,
   } = useSettings();
   const { colors } = useTheme();
 
   const [days, setDays] = useState(globalReminderDays.toString());
+  const [warningKm, setWarningKm] = useState(kmWarningThreshold.toString());
+  const [criticalKm, setCriticalKm] = useState(kmCriticalThreshold.toString());
 
   const handleSave = () => {
     setGlobalReminderDays(Number(days));
+    setKmWarningThreshold(Number(warningKm));
+    setKmCriticalThreshold(Number(criticalKm));
     Alert.alert("Guardado", "Configuración actualizada");
   };
 
@@ -77,6 +85,40 @@ export default function SettingsHomeScreen() {
         placeholderTextColor={colors.text}
         value={days}
         onChangeText={setDays}
+        keyboardType="numeric"
+      />
+
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>
+        Umbrales Kilometraje
+      </Text>
+
+      <Text style={{ color: colors.text }}>Advertencia (km):</Text>
+      <TextInput
+        style={[
+          styles.input,
+          {
+            color: colors.text,
+            borderColor: colors.border,
+            backgroundColor: colors.card,
+          },
+        ]}
+        value={warningKm}
+        onChangeText={setWarningKm}
+        keyboardType="numeric"
+      />
+
+      <Text style={{ color: colors.text }}>Crítico (km):</Text>
+      <TextInput
+        style={[
+          styles.input,
+          {
+            color: colors.text,
+            borderColor: colors.border,
+            backgroundColor: colors.card,
+          },
+        ]}
+        value={criticalKm}
+        onChangeText={setCriticalKm}
         keyboardType="numeric"
       />
 

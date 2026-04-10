@@ -7,6 +7,12 @@ interface SettingsContextProps {
   setGlobalReminderDays: (days: number) => void;
   theme: "light" | "dark";
   setTheme: (theme: "light" | "dark") => void;
+
+  kmWarningThreshold: number;
+  setKmWarningThreshold: (km: number) => void;
+  kmCriticalThreshold: number;
+  setKmCriticalThreshold: (km: number) => void;
+
   resetAppData: () => Promise<void>;
 }
 
@@ -24,6 +30,9 @@ export const SettingsProvider = ({
   const [globalReminderDays, setGlobalReminderDays] = useState(7);
   const [theme, setTheme] = useState<"light" | "dark">("light");
 
+  const [kmWarningThreshold, setKmWarningThreshold] = useState(100000);
+  const [kmCriticalThreshold, setKmCriticalThreshold] = useState(200000);
+
   useEffect(() => {
     const loadSettings = async () => {
       const data = await AsyncStorage.getItem(SETTINGS_KEY);
@@ -35,6 +44,12 @@ export const SettingsProvider = ({
         if (parsed.theme) {
           setTheme(parsed.theme);
         }
+        if (parsed.kmWarningThreshold) {
+          setKmWarningThreshold(parsed.kmWarningThreshold);
+        }
+        if (parsed.kmCriticalThreshold) {
+          setKmCriticalThreshold(parsed.kmCriticalThreshold);
+        }
       }
     };
     loadSettings();
@@ -44,7 +59,12 @@ export const SettingsProvider = ({
     const saveSettings = async () => {
       await AsyncStorage.setItem(
         SETTINGS_KEY,
-        JSON.stringify({ globalReminderDays, theme }),
+        JSON.stringify({
+          globalReminderDays,
+          theme,
+          kmWarningThreshold,
+          kmCriticalThreshold,
+        }),
       );
     };
     saveSettings();
@@ -62,6 +82,10 @@ export const SettingsProvider = ({
         setGlobalReminderDays,
         theme,
         setTheme,
+        kmWarningThreshold,
+        setKmWarningThreshold,
+        kmCriticalThreshold,
+        setKmCriticalThreshold,
         resetAppData,
       }}
     >

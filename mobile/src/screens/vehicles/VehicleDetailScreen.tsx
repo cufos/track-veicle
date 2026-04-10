@@ -20,6 +20,7 @@ import { useMaintenances } from "../../context/MaintenancesContext";
 import { useVehicles } from "../../context/VehiclesContext";
 import { getMaintenanceStatus } from "../../utils/dateUtils";
 import { useSettings } from "../../context/SettingsContext";
+import StatusBadge from "../../components/StatusBadge";
 
 type ParamList = {
   VehicleDetail: { vehicle: Vehicle };
@@ -31,8 +32,12 @@ export default function VehicleDetailScreen() {
   const { vehicle } = route.params;
   const { vehicles, deleteVehicle } = useVehicles();
   const { getMaintenancesByVehicle } = useMaintenances();
-  const { globalReminderDays } = useSettings();
-  const { colors } = useTheme();
+  const {
+    globalReminderDays,
+    kmWarningThreshold,
+    kmCriticalThreshold,
+  } = useSettings();
+  const { colors, dark } = useTheme();
 
   const currentVehicle =
     vehicles.find((v) => v.id === vehicle.id) || vehicle;
@@ -43,21 +48,11 @@ export default function VehicleDetailScreen() {
     return dateA - dateB;
   });
 
-  const urgentMaintenances = maintenances
-    .filter((m) => {
-      const status = getMaintenanceStatus(m.dueDate, globalReminderDays);
-      return status === "expired" || status === "upcoming";
-    })
-    .sort((a, b) => {
-      const statusA = getMaintenanceStatus(a.dueDate, globalReminderDays);
-      const statusB = getMaintenanceStatus(b.dueDate, globalReminderDays);
-
-      // 🔴 Vencidos primero
-      if (statusA === "expired" && statusB !== "expired") return -1;
-      if (statusB === "expired" && statusA !== "expired") return 1;
-
-      return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
-    });
+  // Ordenar todos los mantenimientos por fecha más cercana a vencer
+  const sortedMaintenances = [...maintenances].sort(
+    (a, b) =>
+      new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime(),
+  );
 
   return (
     <ScrollView style={styles.container}>
@@ -101,17 +96,70 @@ export default function VehicleDetailScreen() {
           <Text style={styles.name}>{currentVehicle.name}</Text>
 
           <TouchableOpacity
-            style={styles.inlineEditButton}
             onPress={() => navigation.navigate("AddVehicle", { vehicle })}
           >
-            <Text style={styles.inlineEditText}>✏️</Text>
+            <View
+              style={[
+                styles.maintenanceAction,
+                {
+                  backgroundColor: dark
+                    ? colors.primary + "20"
+                    : "#E5E5EA",
+                },
+              ]}
+            >
+              <Text style={styles.maintenanceActionText}>›</Text>
+            </View>
           </TouchableOpacity>
         </View>
 
-        <Text>
-          {currentVehicle.brand} {currentVehicle.model}
-        </Text>
-        <Text>Año: {currentVehicle.year}</Text>
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginTop: 6,
+          }}
+        >
+          <View>
+            <Text>
+              {currentVehicle.brand} {currentVehicle.model}
+            </Text>
+            <Text>Año: {currentVehicle.year}</Text>
+          </View>
+
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <Image
+              source={require("../../../assets/speedometer_2297516.png")}
+              style={{
+                width: 20,
+                height: 20,
+                tintColor:
+                  (currentVehicle.km ?? 0) >= kmCriticalThreshold
+                    ? "#FF3B30"
+                    : (currentVehicle.km ?? 0) >= kmWarningThreshold
+                    ? "#FF9500"
+                    : colors.text,
+              }}
+              resizeMode="contain"
+            />
+            <Text
+              style={{
+                marginLeft: 6,
+                fontWeight: "700",
+                fontSize: 16,
+                color:
+                  (currentVehicle.km ?? 0) >= kmCriticalThreshold
+                    ? "#FF3B30"
+                    : (currentVehicle.km ?? 0) >= kmWarningThreshold
+                    ? "#FF9500"
+                    : colors.text,
+              }}
+            >
+              {(currentVehicle.km ?? 0).toLocaleString("es-ES")} km
+            </Text>
+          </View>
+        </View>
       </View>
 
       <TouchableOpacity
@@ -157,116 +205,76 @@ export default function VehicleDetailScreen() {
         <Text style={styles.deleteButtonText}>Eliminar Vehículo</Text>
       </TouchableOpacity>
 
-      {urgentMaintenances.length > 0 && (
-        <View style={[styles.section, { backgroundColor: colors.card }]}>
-          <View style={styles.sectionHeaderRow}>
-            <Text style={styles.sectionTitle}>Próximos mantenimientos</Text>
-          </View>
+      <View>
+        <Text style={[styles.sectionTitle, { marginBottom: 8 }]}>
+          Todos
+        </Text>
 
-          {urgentMaintenances.map((m) => {
-            const status = getMaintenanceStatus(m.dueDate, globalReminderDays);
+      {sortedMaintenances.map((m) => {
+        const status = getMaintenanceStatus(m.dueDate, globalReminderDays);
 
-            const statusColor =
-              status === "expired"
-                ? "red"
-                : status === "upcoming"
-                  ? "orange"
-                  : "green";
+        const statusColor =
+          status === "expired"
+            ? "red"
+            : status === "upcoming"
+              ? "orange"
+              : "green";
 
-            return (
-              <View key={m.id} style={styles.maintenanceCard}>
-                <View style={styles.maintenanceHeader}>
-                  <View style={styles.titleRow}>
-                    <Text style={styles.maintenanceTitle}>{m.title}</Text>
+        return (
+          <View
+            key={m.id}
+            style={[
+              styles.maintenanceCard,
+              { backgroundColor: colors.card },
+            ]}
+          >
+            <View style={styles.maintenanceHeader}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                <Text style={styles.maintenanceTitle}>{m.title}</Text>
 
-                    <View
-                      style={[
-                        styles.urgentBadge,
-                        {
-                          backgroundColor:
-                            status === "expired" ? "#FF3B30" : "#FF9500",
-                        },
-                      ]}
-                    >
-                      <Text style={styles.urgentBadgeText}>
-                        {status === "expired" ? "Vencido" : "Próximo"}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <TouchableOpacity
-                    onPress={() =>
-                      navigation.navigate("AddMaintenance", {
-                        vehicleId: currentVehicle.id,
-                        maintenance: m,
-                      })
-                    }
-                  >
-                    <Text style={styles.inlineEditText}>✏️</Text>
-                  </TouchableOpacity>
-                </View>
-
-                <Text>Vence: {m.dueDate}</Text>
-                <Text style={{ color: statusColor }}>
-                  {status === "expired"
-                    ? "Vencido"
-                    : status === "upcoming"
-                      ? "Próximo a vencer"
-                      : "En regla"}
-                </Text>
+                <StatusBadge status={status === "ok" ? "ok" : status} />
               </View>
-            );
-          })}
-        </View>
-      )}
 
-      <View style={[styles.section, { backgroundColor: colors.card }]}>
-        <Text style={styles.sectionTitle}>Todos</Text>
+              <TouchableOpacity
+                onPress={() =>
+                  navigation.navigate("AddMaintenance", {
+                    vehicleId: currentVehicle.id,
+                    maintenance: m,
+                  })
+                }
+              >
+                <View
+                  style={[
+                    styles.maintenanceAction,
+                    {
+                      backgroundColor: dark
+                        ? colors.primary + "20"
+                        : "#E5E5EA",
+                    },
+                  ]}
+                >
+                  <Text style={styles.maintenanceActionText}>›</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
 
-        {maintenances.length === 0 && (
+            <Text>Vence: {m.dueDate}</Text>
+            <Text style={{ color: statusColor }}>
+              {status === "expired"
+                ? "Vencido"
+                : status === "upcoming"
+                  ? "Próximo a vencer"
+                  : "En regla"}
+            </Text>
+          </View>
+        );
+      })}
+
+        {sortedMaintenances.length === 0 && (
           <Text style={{ color: "#666" }}>
             No hay mantenimientos registrados
           </Text>
         )}
-
-        {maintenances.map((m) => {
-          const status = getMaintenanceStatus(m.dueDate, globalReminderDays);
-
-          const statusColor =
-            status === "expired"
-              ? "red"
-              : status === "upcoming"
-                ? "orange"
-                : "green";
-
-          return (
-            <View key={m.id} style={styles.maintenanceCard}>
-              <View style={styles.maintenanceHeader}>
-                <Text style={styles.maintenanceTitle}>{m.title}</Text>
-
-                <TouchableOpacity
-                  onPress={() =>
-                    navigation.navigate("AddMaintenance", {
-                      vehicleId: currentVehicle.id,
-                      maintenance: m,
-                    })
-                  }
-                >
-                  <Text style={styles.inlineEditText}>✏️</Text>
-                </TouchableOpacity>
-              </View>
-
-              <Text>Vence: {m.dueDate}</Text>
-              <Text style={{ color: statusColor }}>
-                {status === "expired"
-                  ? "Vencido"
-                  : status === "upcoming"
-                    ? "Próximo a vencer"
-                    : "En regla"}
-              </Text>
-            </View>
-          );
-        })}
       </View>
     </ScrollView>
   );
@@ -298,12 +306,34 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   inlineEditButton: {
-    padding: 6,
-    borderRadius: 6,
-    backgroundColor: "#00000010",
+    paddingHorizontal: 6,
+    paddingVertical: 4,
   },
   inlineEditText: {
     fontSize: 16,
+  },
+
+  breadcrumbText: {
+    color: "#007AFF",
+    fontWeight: "600",
+    fontSize: 20,
+  },
+
+  maintenanceAction: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  maintenanceActionText: {
+    color: "white",
+    fontSize: 22,
+    fontWeight: "700",
+    lineHeight: 22,
+    textAlign: "center",
+    includeFontPadding: false,
   },
   addButton: {
     backgroundColor: "#007AFF",
@@ -347,10 +377,10 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   maintenanceCard: {
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 10,
-    borderWidth: 1,
+    marginHorizontal: 4,
+    marginBottom: 16,
+    padding: 20,
+    borderRadius: 28,
   },
   maintenanceHeader: {
     flexDirection: "row",

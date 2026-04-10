@@ -6,8 +6,8 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Modal,
-  TouchableWithoutFeedback,
+  Platform,
+  ActivityIndicator,
 } from "react-native";
 import ModalSelector from "react-native-modal-selector";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -50,37 +50,45 @@ export default function AddVehicleScreen() {
   const [km, setKm] = useState(
     editingVehicle?.km ? String(editingVehicle.km) : "",
   );
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSave = async () => {
+    if (isSubmitting) return;
     if (!name || !brand || !model || !year) return;
 
-    if (editingVehicle) {
-      await editVehicle({
-        ...editingVehicle,
-        name,
-        brand,
-        model,
-        year: Number(year),
-        fuelType,
-        vehicleType,
-        purchaseDate: purchaseDate.toISOString(),
-        km: km ? Number(km) : 0,
-      });
-    } else {
-      await addVehicle({
-        name,
-        brand,
-        model,
-        year: Number(year),
-        fuelType,
-        vehicleType,
-        purchaseDate: purchaseDate.toISOString(),
-        km: km ? Number(km) : 0,
-        imageUrl: undefined,
-      });
-    }
+    try {
+      setIsSubmitting(true);
 
-    navigation.goBack();
+      if (editingVehicle) {
+        await editVehicle({
+          ...editingVehicle,
+          name,
+          brand,
+          model,
+          year: Number(year),
+          fuelType,
+          vehicleType,
+          purchaseDate: purchaseDate.toISOString(),
+          km: km ? Number(km) : 0,
+        });
+      } else {
+        await addVehicle({
+          name,
+          brand,
+          model,
+          year: Number(year),
+          fuelType,
+          vehicleType,
+          purchaseDate: purchaseDate.toISOString(),
+          km: km ? Number(km) : 0,
+          imageUrl: undefined,
+        });
+      }
+
+      navigation.goBack();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -266,41 +274,36 @@ export default function AddVehicleScreen() {
           ]}
         />
 
-        <TouchableOpacity style={styles.button} onPress={handleSave}>
-          <Text style={styles.buttonText}>Guardar</Text>
+        <TouchableOpacity
+          style={[
+            styles.button,
+            { opacity: isSubmitting ? 0.7 : 1 },
+          ]}
+          onPress={handleSave}
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.buttonText}>Guardar</Text>
+          )}
         </TouchableOpacity>
       </ScrollView>
 
-      {/* Modal Calendar */}
-      <Modal
-        visible={showDatePicker}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowDatePicker(false)}
-      >
-        <TouchableWithoutFeedback onPress={() => setShowDatePicker(false)}>
-          <View style={styles.modalOverlay}>
-            <TouchableWithoutFeedback>
-              <View
-                style={[styles.modalContent, { backgroundColor: colors.card }]}
-              >
-                <DateTimePicker
-                  value={purchaseDate}
-                  mode="date"
-                  display="inline"
-                  themeVariant={dark ? "dark" : "light"}
-                  textColor={dark ? "#FFFFFF" : "#000000"}
-                  onChange={(event, selectedDate) => {
-                    if (selectedDate) {
-                      setPurchaseDate(selectedDate);
-                    }
-                  }}
-                />
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
+      {showDatePicker && (
+        <DateTimePicker
+          value={purchaseDate}
+          mode="date"
+          display={Platform.OS === "ios" ? "spinner" : "default"}
+          onValueChange={(event, selectedDate) => {
+            setShowDatePicker(false);
+
+            if (selectedDate) {
+              setPurchaseDate(selectedDate);
+            }
+          }}
+        />
+      )}
     </>
   );
 }
@@ -354,15 +357,43 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 8,
   },
-  modalOverlay: {
+  fullScreenModal: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "flex-start",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    paddingTop: 50,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E5E5",
+  },
+  cancelButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    fontWeight: "400",
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+  },
+  doneButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  doneButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  datePickerContainer: {
+    flex: 1,
     justifyContent: "center",
     alignItems: "center",
-  },
-  modalContent: {
-    borderRadius: 12,
-    padding: 16,
-    width: "90%",
   },
 });

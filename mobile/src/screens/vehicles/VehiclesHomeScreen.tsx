@@ -13,6 +13,7 @@ import { useVehicles } from "../../context/VehiclesContext";
 import { useMaintenances } from "../../context/MaintenancesContext";
 import { getMaintenanceStatus } from "../../utils/dateUtils";
 import { useNavigation, useTheme } from "@react-navigation/native";
+import StatusBadge from "../../components/StatusBadge";
 
 const CARD_WIDTH = 220;
 const SCREEN_WIDTH = Dimensions.get("window").width;
@@ -26,6 +27,12 @@ export default function VehiclesHomeScreen() {
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   const selectedVehicle = vehicles[selectedIndex];
+
+  React.useEffect(() => {
+    if (selectedIndex >= vehicles.length && vehicles.length > 0) {
+      setSelectedIndex(vehicles.length - 1);
+    }
+  }, [vehicles, selectedIndex]);
 
   const viewabilityConfig = {
     itemVisiblePercentThreshold: 50,
@@ -45,7 +52,7 @@ export default function VehiclesHomeScreen() {
         ...m,
         status: getMaintenanceStatus(m.dueDate, m.reminderDaysBefore),
       }))
-      .filter((m) => m.status === "expired" || m.status === "upcoming")
+      .filter((m) => m.status === "upcoming")
       .sort((a, b) => {
         // 🔴 Vencidos primero
         if (a.status === "expired" && b.status !== "expired") return -1;
@@ -60,15 +67,15 @@ export default function VehiclesHomeScreen() {
       <FlatList
         data={vehicles}
         keyExtractor={(item) => item.id}
-        horizontal={true}
-        pagingEnabled={true}
+        horizontal={vehicles.length > 0}
+        pagingEnabled={vehicles.length > 0}
         showsHorizontalScrollIndicator={false}
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={viewabilityConfig}
         contentContainerStyle={{ paddingVertical: 0 }}
         style={{ flexGrow: 0 }}
-        snapToInterval={SCREEN_WIDTH}
-        decelerationRate="fast"
+        snapToInterval={vehicles.length > 0 ? SCREEN_WIDTH : undefined}
+        decelerationRate={vehicles.length > 0 ? "fast" : "normal"}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Image
@@ -153,20 +160,59 @@ export default function VehiclesHomeScreen() {
               <Text style={[styles.title, { color: colors.text }]}>
                 {item.name}
               </Text>
-              <Text style={{ color: colors.text }}>
-                {item.brand} {item.model} - {item.year}
-              </Text>
+
+              <View style={styles.vehicleInfoRow}>
+                <Text style={{ color: colors.text }}>
+                  {item.brand} {item.model} - {item.year}
+                </Text>
+
+                <View style={styles.kmContainer}>
+                  {(() => {
+                    const kmValue = item.km ?? 0;
+                    const formattedKm = kmValue.toLocaleString("es-ES");
+                    
+                    let kmColor = colors.text;
+                    if (kmValue >= 200000) kmColor = "#FF3B30"; // rojo
+                    else if (kmValue >= 100000) kmColor = "#FF9500"; // naranja
+
+                    return (
+                      <>
+                        <Image
+                          source={require("../../../assets/speedometer_2297516.png")}
+                          style={[styles.kmIcon, { tintColor: kmColor }]}
+                          resizeMode="contain"
+                        />
+                        <Text
+                          style={{
+                            color: kmColor,
+                            marginLeft: 4,
+                            fontWeight: "600",
+                          }}
+                        >
+                          {formattedKm} km
+                        </Text>
+                      </>
+                    );
+                  })()}
+                </View>
+              </View>
             </TouchableOpacity>
           </View>
         )}
       />
 
-      {/* Indicador simple tipo 1 / N */}
+      {/* Indicador estilo iPhone (dots) */}
       {vehicles.length > 1 && (
-        <View style={styles.pagination}>
-          <Text style={styles.counterText}>
-            {selectedIndex + 1} / {vehicles.length}
-          </Text>
+        <View style={styles.dotsContainer}>
+          {vehicles.map((_, index) => (
+            <View
+              key={index}
+              style={[
+                styles.dot,
+                index === selectedIndex && styles.activeDot,
+              ]}
+            />
+          ))}
         </View>
       )}
 
@@ -191,41 +237,53 @@ export default function VehiclesHomeScreen() {
             </TouchableOpacity>
           </View>
 
-          <View style={[styles.section, { backgroundColor: colors.card }]}>
-            {!vehicleMaintenances ||
-              (vehicleMaintenances.length === 0 && (
+          {!vehicleMaintenances ||
+            (vehicleMaintenances.length === 0 && (
+              <View
+                style={[
+                  styles.maintenanceBox,
+                  { backgroundColor: colors.card, borderColor: colors.border },
+                ]}
+              >
                 <Text style={{ color: colors.text }}>
                   No hay mantenimientos próximos
                 </Text>
-              ))}
+              </View>
+            ))}
 
-            {vehicleMaintenances &&
-              vehicleMaintenances.map((m) => (
-                <View
-                  key={m.id}
-                  style={[
-                    styles.maintenancePreviewCard,
-                    { borderColor: colors.border },
-                  ]}
-                >
+          {vehicleMaintenances &&
+            vehicleMaintenances.map((m) => (
+              <View
+                key={m.id}
+                style={[
+                  styles.maintenanceBox,
+                  {
+                    backgroundColor: colors.card,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                   <Text style={{ color: colors.text, fontWeight: "600" }}>
                     {m.title}
                   </Text>
-                  <Text style={{ color: colors.text, fontSize: 12 }}>
-                    Vence: {m.dueDate}
-                  </Text>
+
+                  <StatusBadge status={m.status} />
                 </View>
-              ))}
-          </View>
+                <Text style={{ color: colors.text, fontSize: 12 }}>
+                  Vence: {m.dueDate}
+                </Text>
+              </View>
+            ))}
         </>
       )}
 
-      {vehicles.length < 3 && vehicles.length > 0 && (
+      {vehicles.length > 0 && (
         <TouchableOpacity
-          style={styles.button}
+          style={styles.fab}
           onPress={() => navigation.navigate("AddVehicle")}
         >
-          <Text style={styles.buttonText}>+ Agregar Vehículo</Text>
+          <Text style={styles.fabText}>+</Text>
         </TouchableOpacity>
       )}
     </View>
@@ -247,6 +305,22 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   title: { fontSize: 16, fontWeight: "bold" },
+
+  vehicleInfoRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  kmContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  kmIcon: {
+    width: 18,
+    height: 18,
+  },
 
   emptyContainer: {
     flex: 1,
@@ -275,7 +349,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 8,
+    marginTop: 24,
     marginBottom: 8,
     paddingHorizontal: 16,
   },
@@ -288,33 +362,70 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
-  maintenancePreviewCard: {
-    padding: 10,
+  maintenanceBox: {
+    marginHorizontal: 16,
+    marginBottom: 12,
+    padding: 14,
+    borderRadius: 12,
     borderWidth: 1,
-    borderRadius: 8,
-    marginBottom: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
 
-  pagination: {
+  dotsContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
     alignItems: "center",
     marginTop: 8,
     marginBottom: 4,
   },
 
-  counterText: {
-    fontSize: 12,
-    color: "#666",
-    fontWeight: "600",
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#ccc",
+    marginHorizontal: 4,
+  },
+
+  activeDot: {
+    backgroundColor: "#007AFF",
+    width: 10,
+    height: 10,
   },
   button: {
     backgroundColor: "#007AFF",
     padding: 15,
     borderRadius: 8,
     alignItems: "center",
-    position: "absolute",
-    bottom: 20,
-    left: 16,
-    right: 16,
+    marginTop: 20,
+    marginHorizontal: 16,
   },
   buttonText: { color: "white", fontWeight: "bold" },
+
+  fab: {
+    position: "absolute",
+    right: 20,
+    bottom: 30,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "#007AFF",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 6,
+  },
+  fabText: {
+    color: "white",
+    fontSize: 32,
+    fontWeight: "600",
+    marginTop: -2,
+  },
 });

@@ -5,10 +5,9 @@ import {
   TouchableOpacity,
   Text,
   StyleSheet,
-  Modal,
-  TouchableWithoutFeedback,
   ScrollView,
   Alert,
+  Platform,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useMaintenances } from "../../context/MaintenancesContext";
@@ -164,36 +163,20 @@ export default function AddMaintenanceScreen() {
         )}
       </ScrollView>
 
-      {/* Modal Calendar */}
-      <Modal
-        visible={showDatePicker}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowDatePicker(false)}
-      >
-        <TouchableWithoutFeedback onPress={() => setShowDatePicker(false)}>
-          <View style={styles.modalOverlay}>
-            <TouchableWithoutFeedback>
-              <View
-                style={[styles.modalContent, { backgroundColor: colors.card }]}
-              >
-                <DateTimePicker
-                  value={dueDate}
-                  mode="date"
-                  display="inline"
-                  themeVariant={dark ? "dark" : "light"}
-                  textColor={dark ? "#FFFFFF" : "#000000"}
-                  onChange={(event, selectedDate) => {
-                    if (selectedDate) {
-                      setDueDate(selectedDate);
-                    }
-                  }}
-                />
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
+      {showDatePicker && (
+        <DateTimePicker
+          value={dueDate}
+          mode="date"
+          display={Platform.OS === "ios" ? "spinner" : "default"}
+          onValueChange={(event, selectedDate) => {
+            setShowDatePicker(false);
+
+            if (selectedDate) {
+              setDueDate(selectedDate);
+            }
+          }}
+        />
+      )}
     </>
   );
 }
@@ -218,15 +201,43 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   buttonText: { color: "white", fontWeight: "bold" },
-  modalOverlay: {
+  fullScreenModal: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "flex-start",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    paddingTop: 50,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E5E5",
+  },
+  cancelButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    fontWeight: "400",
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+  },
+  doneButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  doneButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  datePickerContainer: {
+    flex: 1,
     justifyContent: "center",
     alignItems: "center",
-  },
-  modalContent: {
-    borderRadius: 12,
-    padding: 16,
-    width: "90%",
   },
 });

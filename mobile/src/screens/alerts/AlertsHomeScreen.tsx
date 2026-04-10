@@ -17,6 +17,7 @@ import {
   useRoute,
   RouteProp,
 } from "@react-navigation/native";
+import StatusBadge from "../../components/StatusBadge";
 
 type ParamList = {
   Alerts: { vehicleId?: string };
@@ -25,7 +26,7 @@ type ParamList = {
 export default function AlertsHomeScreen() {
   const { vehicles } = useVehicles();
   const { maintenances } = useMaintenances();
-  const { colors } = useTheme();
+  const { colors, dark } = useTheme();
   const navigation = useNavigation<any>();
   const route = useRoute<RouteProp<ParamList, "Alerts">>();
   const vehicleIdFilter = route.params?.vehicleId ?? null;
@@ -115,9 +116,18 @@ export default function AlertsHomeScreen() {
               })
             }
           >
-            <Text style={[styles.breadcrumbText, { color: "#007AFF" }]}>
-              {filteredVehicle.name}
-            </Text>
+            <View
+              style={[
+                styles.maintenanceAction,
+                {
+                  backgroundColor: dark
+                    ? colors.primary + "20"
+                    : "#E5E5EA",
+                },
+              ]}
+            >
+              <Text style={styles.maintenanceActionText}>›</Text>
+            </View>
           </TouchableOpacity>
 
           <Text style={[styles.breadcrumbSeparator, { color: colors.text }]}>
@@ -197,9 +207,13 @@ export default function AlertsHomeScreen() {
                     ]}
                   >
                     <View style={styles.alertHeader}>
-                      <Text style={[styles.alertTitle, { color: colors.text }]}>
-                        {m.title}
-                      </Text>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                        <Text style={[styles.alertTitle, { color: colors.text }]}>
+                          {m.title}
+                        </Text>
+
+                        <StatusBadge status={status === "ok" ? "ok" : status} />
+                      </View>
 
                       <TouchableOpacity
                         onPress={() =>
@@ -212,7 +226,18 @@ export default function AlertsHomeScreen() {
                           })
                         }
                       >
-                        <Text style={styles.inlineEditText}>✏️</Text>
+                        <View
+                          style={[
+                            styles.maintenanceAction,
+                            {
+                              backgroundColor: dark
+                                ? colors.primary + "20"
+                                : "#E5E5EA",
+                            },
+                          ]}
+                        >
+                          <Text style={styles.maintenanceActionText}>›</Text>
+                        </View>
                       </TouchableOpacity>
                     </View>
 
@@ -292,6 +317,23 @@ const styles = StyleSheet.create({
   },
   inlineEditText: {
     fontSize: 16,
+  },
+
+  maintenanceAction: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  maintenanceActionText: {
+    color: "white",
+    fontSize: 22,
+    fontWeight: "700",
+    lineHeight: 22,
+    textAlign: "center",
+    includeFontPadding: false,
   },
   breadcrumbContainer: {
     marginBottom: 12,
