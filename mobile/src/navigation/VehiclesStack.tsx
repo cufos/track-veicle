@@ -9,7 +9,14 @@ const Stack = createNativeStackNavigator();
 
 export default function VehiclesStack() {
   return (
-    <Stack.Navigator>
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: '#FFFFFF',
+        },
+        headerShadowVisible: false,
+      }}
+    >
       <Stack.Screen
         name="VehiclesHome"
         component={VehiclesHomeScreen}
@@ -28,7 +35,10 @@ export default function VehiclesStack() {
       <Stack.Screen
         name="AddMaintenance"
         component={AddMaintenanceScreen}
-        options={{ title: "Agregar Mantenimiento" }}
+        options={{
+          title: "Agregar Mantenimiento",
+          headerBackTitle: "Detalle",
+        }}
       />
     </Stack.Navigator>
   );

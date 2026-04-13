@@ -21,6 +21,7 @@ import { useVehicles } from "../../context/VehiclesContext";
 import { getMaintenanceStatus } from "../../utils/dateUtils";
 import { useSettings } from "../../context/SettingsContext";
 import StatusBadge from "../../components/StatusBadge";
+import { ImageSourcePropType } from "react-native";
 
 type ParamList = {
   VehicleDetail: { vehicle: Vehicle };
@@ -48,14 +49,50 @@ export default function VehicleDetailScreen() {
     return dateA - dateB;
   });
 
-  // Ordenar todos los mantenimientos por fecha más cercana a vencer
-  const sortedMaintenances = [...maintenances].sort(
-    (a, b) =>
-      new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime(),
-  );
+  // Separar mantenimientos en activos y vencidos
+  const activeMaintenances = maintenances
+    .filter(
+      (m) =>
+        getMaintenanceStatus(m.dueDate, globalReminderDays) !== "expired",
+    )
+    .sort(
+      (a, b) =>
+        new Date(a.dueDate).getTime() -
+        new Date(b.dueDate).getTime(),
+    );
+
+  const expiredMaintenances = maintenances
+    .filter(
+      (m) =>
+        getMaintenanceStatus(m.dueDate, globalReminderDays) === "expired",
+    )
+    .sort(
+      (a, b) =>
+        new Date(a.dueDate).getTime() -
+        new Date(b.dueDate).getTime(),
+    );
+
+  const getCategoryImage = (title: string): ImageSourcePropType | null => {
+    if (title.startsWith("Mantenimiento -"))
+      return require("../../../assets/customer-support.png");
+    if (title.startsWith("Servicio -"))
+      return require("../../../assets/oil-gallon_17034637.png");
+    if (title.startsWith("Inspección -"))
+      return require("../../../assets/checklist.png");
+    if (title.startsWith("Neumáticos -"))
+      return require("../../../assets/wheels_465128.png");
+    if (title.startsWith("Impuesto de circulación -"))
+      return require("../../../assets/car.png");
+    if (title.startsWith("Aseguración -"))
+      return require("../../../assets/clipboard.png");
+    return null;
+  };
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={{ paddingBottom: 40 }}
+    >
       {currentVehicle.imageUrl === "local-van" && (
         <Image
           source={require("../../../assets/van.png")}
@@ -210,7 +247,7 @@ export default function VehicleDetailScreen() {
           Todos
         </Text>
 
-      {sortedMaintenances.map((m) => {
+      {activeMaintenances.map((m) => {
         const status = getMaintenanceStatus(m.dueDate, globalReminderDays);
 
         const statusColor =
@@ -220,6 +257,8 @@ export default function VehicleDetailScreen() {
               ? "orange"
               : "green";
 
+        const categoryImage = getCategoryImage(m.title);
+
         return (
           <View
             key={m.id}
@@ -228,49 +267,145 @@ export default function VehicleDetailScreen() {
               { backgroundColor: colors.card },
             ]}
           >
-            <View style={styles.maintenanceHeader}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                <Text style={styles.maintenanceTitle}>{m.title}</Text>
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              {categoryImage && (
+                <Image
+                  source={categoryImage}
+                  style={{ width: 40, height: 40, marginRight: 12 }}
+                  resizeMode="contain"
+                />
+              )}
 
-                <StatusBadge status={status === "ok" ? "ok" : status} />
-              </View>
+              <View style={{ flex: 1 }}>
+                <View style={styles.maintenanceHeader}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                    <Text style={styles.maintenanceTitle}>
+                      {m.title.replace(/^[^-]+ - /, "")}
+                    </Text>
 
-              <TouchableOpacity
-                onPress={() =>
-                  navigation.navigate("AddMaintenance", {
-                    vehicleId: currentVehicle.id,
-                    maintenance: m,
-                  })
-                }
-              >
-                <View
-                  style={[
-                    styles.maintenanceAction,
-                    {
-                      backgroundColor: dark
-                        ? colors.primary + "20"
-                        : "#E5E5EA",
-                    },
-                  ]}
-                >
-                  <Text style={styles.maintenanceActionText}>›</Text>
+                    <StatusBadge status={status === "ok" ? "ok" : status} />
+                  </View>
+
+                  <TouchableOpacity
+                    onPress={() =>
+                      navigation.navigate("AddMaintenance", {
+                        vehicleId: currentVehicle.id,
+                        maintenance: m,
+                      })
+                    }
+                  >
+                    <View
+                      style={[
+                        styles.maintenanceAction,
+                        {
+                          backgroundColor: dark
+                            ? colors.primary + "20"
+                            : "#E5E5EA",
+                        },
+                      ]}
+                    >
+                      <Text style={styles.maintenanceActionText}>›</Text>
+                    </View>
+                  </TouchableOpacity>
                 </View>
-              </TouchableOpacity>
-            </View>
 
-            <Text>Vence: {m.dueDate}</Text>
-            <Text style={{ color: statusColor }}>
-              {status === "expired"
-                ? "Vencido"
-                : status === "upcoming"
-                  ? "Próximo a vencer"
-                  : "En regla"}
-            </Text>
+                <Text>Vence: {m.dueDate}</Text>
+              </View>
+            </View>
           </View>
         );
       })}
 
-        {sortedMaintenances.length === 0 && (
+      {expiredMaintenances.length > 0 && (
+        <View style={{ marginTop: 8 }}>
+          <Text style={[styles.sectionTitle, { marginBottom: 8 }]}>
+            Vencidas
+          </Text>
+
+          {expiredMaintenances.map((m) => {
+            const status = getMaintenanceStatus(
+              m.dueDate,
+              globalReminderDays,
+            );
+            const categoryImage = getCategoryImage(m.title);
+
+            return (
+              <View
+                key={m.id}
+                style={[
+                  styles.maintenanceCard,
+                  { backgroundColor: colors.card },
+                ]}
+              >
+                <View
+                  style={{ flexDirection: "row", alignItems: "center" }}
+                >
+                  {categoryImage && (
+                    <Image
+                      source={categoryImage}
+                      style={{
+                        width: 40,
+                        height: 40,
+                        marginRight: 12,
+                      }}
+                      resizeMode="contain"
+                    />
+                  )}
+
+                  <View style={{ flex: 1 }}>
+                    <View style={styles.maintenanceHeader}>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 8,
+                        }}
+                      >
+                        <Text style={styles.maintenanceTitle}>
+                          {m.title.replace(/^[^-]+ - /, "")}
+                        </Text>
+
+                        <StatusBadge
+                          status={status === "ok" ? "ok" : status}
+                        />
+                      </View>
+
+                      <TouchableOpacity
+                        onPress={() =>
+                          navigation.navigate("AddMaintenance", {
+                            vehicleId: currentVehicle.id,
+                            maintenance: m,
+                          })
+                        }
+                      >
+                        <View
+                          style={[
+                            styles.maintenanceAction,
+                            {
+                              backgroundColor: dark
+                                ? colors.primary + "20"
+                                : "#E5E5EA",
+                            },
+                          ]}
+                        >
+                          <Text style={styles.maintenanceActionText}>
+                            ›
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    </View>
+
+                    <Text>Vence: {m.dueDate}</Text>
+                  </View>
+                </View>
+              </View>
+            );
+          })}
+        </View>
+      )}
+
+      {activeMaintenances.length === 0 &&
+        expiredMaintenances.length === 0 && (
           <Text style={{ color: "#666" }}>
             No hay mantenimientos registrados
           </Text>

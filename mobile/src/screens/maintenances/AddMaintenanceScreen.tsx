@@ -1,243 +1,271 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import {
   View,
-  TextInput,
-  TouchableOpacity,
   Text,
+  TextInput,
   StyleSheet,
-  ScrollView,
+  TouchableOpacity,
   Alert,
-  Platform,
-} from "react-native";
-import DateTimePicker from "@react-native-community/datetimepicker";
-import { useMaintenances } from "../../context/MaintenancesContext";
-import {
-  RouteProp,
-  useNavigation,
-  useRoute,
-  useTheme,
-} from "@react-navigation/native";
-import { Maintenance } from "../../models/types";
+  ScrollView,
+  Image,
+} from 'react-native';
+import { useMaintenances } from '../../context/MaintenancesContext';
 
-type ParamList = {
-  AddMaintenance: { vehicleId: string; maintenance?: Maintenance };
+type Props = any;
+
+type CategoryType =
+  | 'Mantenimiento'
+  | 'Servicio'
+  | 'Inspección'
+  | 'Neumáticos'
+  | 'Impuesto de circulación'
+  | 'Aseguración';
+
+const CATEGORIES: CategoryType[] = [
+  'Mantenimiento',
+  'Servicio',
+  'Inspección',
+  'Neumáticos',
+  'Impuesto de circulación',
+  'Aseguración',
+];
+
+const CATEGORY_IMAGES: Record<CategoryType, any> = {
+  Mantenimiento: require('../../../assets/customer-support.png'),
+  Servicio: require('../../../assets/oil-gallon_17034637.png'),
+  Inspección: require('../../../assets/checklist.png'),
+  Neumáticos: require('../../../assets/wheels_465128.png'),
+  'Impuesto de circulación': require('../../../assets/car.png'),
+  Aseguración: require('../../../assets/clipboard.png'),
 };
 
-export default function AddMaintenanceScreen() {
-  const { addMaintenance, editMaintenance, deleteMaintenance } =
-    useMaintenances();
-  const navigation = useNavigation<any>();
-  const route = useRoute<RouteProp<ParamList, "AddMaintenance">>();
+const CATEGORY_COLORS: Record<CategoryType, string> = {
+  Mantenimiento: '#E8F4FD', // azul claro suave
+  Servicio: '#FFF4E6', // naranja claro suave
+  Inspección: '#EAF7F0', // verde claro suave
+  Neumáticos: '#F3E8FF', // violeta claro suave
+  'Impuesto de circulación': '#E6F7FF', // celeste muy claro
+  Aseguración: '#FFF0F6', // rosado muy claro
+};
+
+export default function AddMaintenanceScreen({ route, navigation }: Props) {
   const { vehicleId, maintenance } = route.params;
-  const { colors, dark } = useTheme();
+  const { addMaintenance } = useMaintenances();
 
-  const editing = !!maintenance;
+  React.useLayoutEffect(() => {
+    navigation.getParent()?.setOptions({
+      tabBarStyle: { display: 'none' },
+    });
 
-  const [title, setTitle] = useState(maintenance?.title || "");
-  const [dueDate, setDueDate] = useState<Date>(
-    maintenance ? new Date(maintenance.dueDate) : new Date(),
+    return () => {
+      navigation.getParent()?.setOptions({
+        tabBarStyle: undefined,
+      });
+    };
+  }, [navigation]);
+
+  const extractCategoryFromTitle = (fullTitle: string): CategoryType | null => {
+    const found = CATEGORIES.find((cat) =>
+      fullTitle.startsWith(`${cat} - `),
+    );
+    return found || null;
+  };
+
+  const extractCleanTitle = (fullTitle: string): string => {
+    const category = extractCategoryFromTitle(fullTitle);
+    if (!category) return fullTitle;
+    return fullTitle.replace(`${category} - `, '');
+  };
+
+  const [selectedCategory, setSelectedCategory] =
+    useState<CategoryType | null>(
+      maintenance ? extractCategoryFromTitle(maintenance.title) : null,
+    );
+
+  const [title, setTitle] = useState(
+    maintenance ? extractCleanTitle(maintenance.title) : '',
   );
-  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [notes, setNotes] = useState(maintenance?.notes ?? '');
+  const [dueDate, setDueDate] = useState(maintenance?.dueDate ?? '');
   const [reminderDaysBefore, setReminderDaysBefore] = useState(
-    maintenance ? String(maintenance.reminderDaysBefore) : "7",
+    maintenance?.reminderDaysBefore
+      ? String(maintenance.reminderDaysBefore)
+      : '7',
   );
+  const [type] = useState<'date' | 'interval'>('date');
 
-  const handleSave = async () => {
-    const days = Math.max(1, Number(reminderDaysBefore));
-
-    if (!title) return;
-
-    if (editing && maintenance) {
-      await editMaintenance({
-        ...maintenance,
-        title,
-        dueDate: dueDate.toISOString().split("T")[0],
-        reminderDaysBefore: days,
-      });
-    } else {
-      await addMaintenance({
-        vehicleId,
-        title,
-        dueDate: dueDate.toISOString().split("T")[0],
-        reminderDaysBefore: days,
-        type: "date",
-        notes: "",
-      });
+  const handleSave = () => {
+    if (!title || !dueDate || !selectedCategory) {
+      Alert.alert('Error', 'Completa los campos obligatorios');
+      return;
     }
+
+    addMaintenance({
+      vehicleId,
+      title: `${selectedCategory} - ${title}`,
+      dueDate,
+      reminderDaysBefore: parseInt(reminderDaysBefore, 10),
+      type,
+      notes,
+    });
 
     navigation.goBack();
   };
 
-  return (
-    <>
-      <ScrollView
-        contentContainerStyle={[
-          styles.container,
-          { backgroundColor: colors.background },
-        ]}
-        showsVerticalScrollIndicator={false}
-      >
-        <TextInput
-          placeholder="Título"
-          placeholderTextColor={dark ? "#aaa" : "#666"}
-          style={[
-            styles.input,
-            {
-              color: colors.text,
-              backgroundColor: colors.card,
-              borderColor: colors.border,
-            },
-          ]}
-          value={title}
-          onChangeText={setTitle}
-        />
-
-        <TouchableOpacity
-          onPress={() => setShowDatePicker(true)}
-          style={[
-            styles.input,
-            {
-              justifyContent: "center",
-              backgroundColor: colors.card,
-              borderColor: colors.border,
-            },
-          ]}
-        >
-          <Text style={{ color: colors.text }}>
-            {dueDate.toISOString().split("T")[0]}
-          </Text>
-        </TouchableOpacity>
-
-        <TextInput
-          placeholder="Días antes para alerta"
-          placeholderTextColor={dark ? "#aaa" : "#666"}
-          style={[
-            styles.input,
-            {
-              color: colors.text,
-              backgroundColor: colors.card,
-              borderColor: colors.border,
-            },
-          ]}
-          value={reminderDaysBefore}
-          onChangeText={(text) => {
-            const value = Number(text);
-            if (value < 1) {
-              setReminderDaysBefore("1");
-            } else {
-              setReminderDaysBefore(text);
-            }
-          }}
-          keyboardType="numeric"
-        />
-
-        <TouchableOpacity style={styles.button} onPress={handleSave}>
-          <Text style={styles.buttonText}>
-            {editing ? "Actualizar Mantenimiento" : "Guardar Mantenimiento"}
-          </Text>
-        </TouchableOpacity>
-
-        {editing && maintenance && (
+  const renderCategoryGrid = () => (
+    <View style={styles.gridContainer}>
+      <Text style={styles.title}>Selecciona una categoría</Text>
+      <View style={styles.grid}>
+        {CATEGORIES.map((category) => (
           <TouchableOpacity
-            style={[styles.button, { backgroundColor: "#FF3B30" }]}
-            onPress={() => {
-              Alert.alert(
-                "Eliminar mantenimiento",
-                "¿Estás seguro que quieres eliminar este mantenimiento?",
-                [
-                  { text: "Cancelar", style: "cancel" },
-                  {
-                    text: "Eliminar",
-                    style: "destructive",
-                    onPress: async () => {
-                      await deleteMaintenance(maintenance.id);
-                      navigation.goBack();
-                    },
-                  },
-                ],
-              );
-            }}
+            key={category}
+            style={[
+              styles.categoryCard,
+              { backgroundColor: CATEGORY_COLORS[category] },
+            ]}
+            onPress={() => setSelectedCategory(category)}
           >
-            <Text style={styles.buttonText}>Eliminar Mantenimiento</Text>
+            <Image
+              source={CATEGORY_IMAGES[category]}
+              style={styles.categoryImage}
+              resizeMode="contain"
+            />
+            <Text style={styles.categoryText}>{category}</Text>
           </TouchableOpacity>
-        )}
-      </ScrollView>
-
-      {showDatePicker && (
-        <DateTimePicker
-          value={dueDate}
-          mode="date"
-          display={Platform.OS === "ios" ? "spinner" : "default"}
-          onValueChange={(event, selectedDate) => {
-            setShowDatePicker(false);
-
-            if (selectedDate) {
-              setDueDate(selectedDate);
-            }
-          }}
-        />
-      )}
-    </>
+        ))}
+      </View>
+    </View>
   );
+
+  const renderForm = () => (
+    <ScrollView contentContainerStyle={styles.container}>
+      <TouchableOpacity onPress={() => setSelectedCategory(null)}>
+        <Text style={styles.changeCategory}>← Cambiar categoría</Text>
+      </TouchableOpacity>
+
+      <Text style={styles.categorySelected}>
+        Categoría: {selectedCategory}
+      </Text>
+
+      <Text style={styles.label}>Título *</Text>
+      <TextInput
+        style={styles.input}
+        value={title}
+        onChangeText={setTitle}
+        placeholder="Ej: Cambio de aceite"
+      />
+
+      <Text style={styles.label}>Notas</Text>
+      <TextInput
+        style={[styles.input, styles.textArea]}
+        value={notes}
+        onChangeText={setNotes}
+        placeholder="Detalles adicionales"
+        multiline
+      />
+
+      <Text style={styles.label}>Fecha de vencimiento *</Text>
+      <TextInput
+        style={styles.input}
+        value={dueDate}
+        onChangeText={setDueDate}
+        placeholder="YYYY-MM-DD"
+      />
+
+      <Text style={styles.label}>Recordar días antes</Text>
+      <TextInput
+        style={styles.input}
+        value={reminderDaysBefore}
+        onChangeText={setReminderDaysBefore}
+        keyboardType="numeric"
+        placeholder="Ej: 7"
+      />
+
+      <TouchableOpacity style={styles.button} onPress={handleSave}>
+        <Text style={styles.buttonText}>Guardar</Text>
+      </TouchableOpacity>
+    </ScrollView>
+  );
+
+  return selectedCategory ? renderForm() : renderCategoryGrid();
 }
 
 const styles = StyleSheet.create({
+  gridContainer: {
+    flex: 1,
+    padding: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: '700',
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  grid: {
+    flexDirection: 'column',
+    width: '100%',
+    alignItems: 'center',
+  },
+  categoryCard: {
+    width: '90%',
+    backgroundColor: '#f1f3f5',
+    paddingVertical: 22,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+    marginBottom: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  categoryImage: {
+    width: 36,
+    height: 36,
+    marginRight: 14,
+  },
+  categoryText: {
+    fontWeight: '700',
+    fontSize: 17,
+    flexShrink: 1,
+  },
   container: {
     padding: 16,
-    paddingBottom: 40,
+  },
+  changeCategory: {
+    color: '#007bff',
+    marginBottom: 8,
+    fontWeight: '500',
+  },
+  categorySelected: {
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  label: {
+    fontWeight: '600',
+    marginTop: 12,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#ccc",
-    padding: 12,
+    borderColor: '#ccc',
     borderRadius: 8,
-    marginBottom: 10,
+    padding: 10,
+    marginTop: 4,
+  },
+  textArea: {
+    minHeight: 80,
+    textAlignVertical: 'top',
   },
   button: {
-    backgroundColor: "#007AFF",
-    padding: 15,
+    marginTop: 24,
+    backgroundColor: '#007bff',
+    padding: 14,
     borderRadius: 8,
-    alignItems: "center",
-    marginTop: 10,
+    alignItems: 'center',
   },
-  buttonText: { color: "white", fontWeight: "bold" },
-  fullScreenModal: {
-    flex: 1,
-    justifyContent: "flex-start",
-  },
-  modalHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    paddingTop: 50,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E5E5",
-  },
-  cancelButton: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-  },
-  cancelButtonText: {
-    fontSize: 16,
-    fontWeight: "400",
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-  },
-  doneButton: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-  },
-  doneButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  datePickerContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+  buttonText: {
+    color: '#fff',
+    fontWeight: '600',
   },
 });

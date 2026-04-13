@@ -18,6 +18,7 @@ import {
   RouteProp,
 } from "@react-navigation/native";
 import StatusBadge from "../../components/StatusBadge";
+import { ImageSourcePropType } from "react-native";
 
 type ParamList = {
   Alerts: { vehicleId?: string };
@@ -96,6 +97,22 @@ export default function AlertsHomeScreen() {
     }
   }, [filteredVehicle, navigation]);
 
+  const getCategoryImage = (title: string): ImageSourcePropType | null => {
+    if (title.startsWith("Mantenimiento -"))
+      return require("../../../assets/customer-support.png");
+    if (title.startsWith("Servicio -"))
+      return require("../../../assets/oil-gallon_17034637.png");
+    if (title.startsWith("Inspección -"))
+      return require("../../../assets/checklist.png");
+    if (title.startsWith("Neumáticos -"))
+      return require("../../../assets/wheels_465128.png");
+    if (title.startsWith("Impuesto de circulación -"))
+      return require("../../../assets/car.png");
+    if (title.startsWith("Aseguración -"))
+      return require("../../../assets/clipboard.png");
+    return null;
+  };
+
   return (
     <ScrollView style={styles.container}>
       {filteredVehicle && (
@@ -168,15 +185,32 @@ export default function AlertsHomeScreen() {
                 m.reminderDaysBefore,
               );
 
-              if (filter === "all") return true; // ✅ Mostrar todos
+              if (filter === "all") return true;
               if (filter === "expired") return status === "expired";
               if (filter === "upcoming") return status === "upcoming";
               return false;
             })
             .sort((a, b) => {
-              const dateA = new Date(a.dueDate).getTime();
-              const dateB = new Date(b.dueDate).getTime();
-              return dateA - dateB;
+              const statusA = getMaintenanceStatus(
+                a.dueDate,
+                a.reminderDaysBefore,
+              );
+              const statusB = getMaintenanceStatus(
+                b.dueDate,
+                b.reminderDaysBefore,
+              );
+
+              // En el tab "Todas", mandar vencidas al final
+              if (filter === "all") {
+                if (statusA === "expired" && statusB !== "expired") return 1;
+                if (statusA !== "expired" && statusB === "expired") return -1;
+              }
+
+              // Dentro del mismo grupo, ordenar por fecha
+              return (
+                new Date(a.dueDate).getTime() -
+                new Date(b.dueDate).getTime()
+              );
             });
 
           if (vehicleMaintenances.length === 0) return null;
@@ -195,6 +229,8 @@ export default function AlertsHomeScreen() {
 
                 const statusColor = status === "expired" ? "red" : "orange";
 
+                const categoryImage = getCategoryImage(m.title);
+
                 return (
                   <View
                     key={m.id}
@@ -206,51 +242,75 @@ export default function AlertsHomeScreen() {
                       },
                     ]}
                   >
-                    <View style={styles.alertHeader}>
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                        <Text style={[styles.alertTitle, { color: colors.text }]}>
-                          {m.title}
-                        </Text>
+                    <View style={{ flexDirection: "row", alignItems: "center" }}>
+                      {categoryImage && (
+                        <Image
+                          source={categoryImage}
+                          style={{
+                            width: 36,
+                            height: 36,
+                            marginRight: 10,
+                          }}
+                          resizeMode="contain"
+                        />
+                      )}
 
-                        <StatusBadge status={status === "ok" ? "ok" : status} />
-                      </View>
+                      <View style={{ flex: 1 }}>
+                        <View style={styles.alertHeader}>
+                          <View
+                            style={{
+                              flexDirection: "row",
+                              alignItems: "center",
+                              gap: 8,
+                            }}
+                          >
+                            <Text
+                              style={[
+                                styles.alertTitle,
+                                { color: colors.text },
+                              ]}
+                            >
+                              {m.title.replace(/^[^-]+ - /, "")}
+                            </Text>
 
-                      <TouchableOpacity
-                        onPress={() =>
-                          navigation.navigate("Vehículos", {
-                            screen: "AddMaintenance",
-                            params: {
-                              vehicleId: vehicle.id,
-                              maintenance: m,
-                            },
-                          })
-                        }
-                      >
-                        <View
-                          style={[
-                            styles.maintenanceAction,
-                            {
-                              backgroundColor: dark
-                                ? colors.primary + "20"
-                                : "#E5E5EA",
-                            },
-                          ]}
-                        >
-                          <Text style={styles.maintenanceActionText}>›</Text>
+                            <StatusBadge
+                              status={status === "ok" ? "ok" : status}
+                            />
+                          </View>
+
+                          <TouchableOpacity
+                            onPress={() =>
+                              navigation.navigate("Vehículos", {
+                                screen: "AddMaintenance",
+                                params: {
+                                  vehicleId: vehicle.id,
+                                  maintenance: m,
+                                },
+                              })
+                            }
+                          >
+                            <View
+                              style={[
+                                styles.maintenanceAction,
+                                {
+                                  backgroundColor: dark
+                                    ? colors.primary + "20"
+                                    : "#E5E5EA",
+                                },
+                              ]}
+                            >
+                              <Text style={styles.maintenanceActionText}>
+                                ›
+                              </Text>
+                            </View>
+                          </TouchableOpacity>
                         </View>
-                      </TouchableOpacity>
-                    </View>
 
-                    <Text style={{ color: colors.text }}>
-                      Vence: {m.dueDate}
-                    </Text>
-                    <Text style={{ color: statusColor }}>
-                      {status === "expired"
-                        ? "Vencido"
-                        : status === "upcoming"
-                          ? "Próximo a vencer"
-                          : "En regla"}
-                    </Text>
+                        <Text style={{ color: colors.text }}>
+                          Vence: {m.dueDate}
+                        </Text>
+                      </View>
+                    </View>
                   </View>
                 );
               })}
