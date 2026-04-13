@@ -19,8 +19,11 @@ import { Vehicle } from "../../models/types";
 import { useMaintenances } from "../../context/MaintenancesContext";
 import { useVehicles } from "../../context/VehiclesContext";
 import { getMaintenanceStatus } from "../../utils/dateUtils";
+import { getDueDateStatus } from "../../utils/dueDateUtils";
 import { useSettings } from "../../context/SettingsContext";
 import StatusBadge from "../../components/StatusBadge";
+import DueDateIndicator from "../../components/DueDateIndicator";
+import i18n from "../../i18n";
 import { ImageSourcePropType } from "react-native";
 
 type ParamList = {
@@ -72,20 +75,25 @@ export default function VehicleDetailScreen() {
         new Date(b.dueDate).getTime(),
     );
 
-  const getCategoryImage = (title: string): ImageSourcePropType | null => {
-    if (title.startsWith("Mantenimiento -"))
-      return require("../../../assets/customer-support.png");
-    if (title.startsWith("Servicio -"))
-      return require("../../../assets/oil-gallon_17034637.png");
-    if (title.startsWith("Inspección -"))
-      return require("../../../assets/checklist.png");
-    if (title.startsWith("Neumáticos -"))
-      return require("../../../assets/wheels_465128.png");
-    if (title.startsWith("Impuesto de circulación -"))
-      return require("../../../assets/car.png");
-    if (title.startsWith("Aseguración -"))
-      return require("../../../assets/clipboard.png");
-    return null;
+  const getCategoryImage = (
+    category: string,
+  ): ImageSourcePropType | null => {
+    switch (category) {
+      case "maintenance":
+        return require("../../../assets/customer-support.png");
+      case "service":
+        return require("../../../assets/oil-gallon_17034637.png");
+      case "inspection":
+        return require("../../../assets/checklist.png");
+      case "tires":
+        return require("../../../assets/wheels_465128.png");
+      case "tax":
+        return require("../../../assets/car.png");
+      case "insurance":
+        return require("../../../assets/clipboard.png");
+      default:
+        return null;
+    }
   };
 
   return (
@@ -128,7 +136,7 @@ export default function VehicleDetailScreen() {
           />
         )}
 
-      <View style={[styles.infoCard, { backgroundColor: colors.card }]}>
+      <View style={styles.infoCard}>
         <View style={styles.infoHeader}>
           <Text style={styles.name}>{currentVehicle.name}</Text>
 
@@ -205,7 +213,9 @@ export default function VehicleDetailScreen() {
           navigation.navigate("AddMaintenance", { vehicleId: currentVehicle.id })
         }
       >
-        <Text style={styles.addButtonText}>+ Agregar Mantenimiento</Text>
+        <Text style={styles.addButtonText}>
+          + {i18n.t("alerts.upcoming")}
+        </Text>
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -213,7 +223,7 @@ export default function VehicleDetailScreen() {
         onPress={async () => {
           if (Platform.OS === "web") {
             const confirmed = window.confirm(
-              "¿Estás seguro que quieres eliminar este vehículo? Esta acción no se puede deshacer.",
+              i18n.t("common.delete"),
             );
 
             if (confirmed) {
@@ -222,12 +232,12 @@ export default function VehicleDetailScreen() {
             }
           } else {
             Alert.alert(
-              "Eliminar vehículo",
-              "¿Estás seguro que quieres eliminar este vehículo? Esta acción no se puede deshacer.",
+              i18n.t("common.delete"),
+              i18n.t("common.delete"),
               [
-                { text: "Cancelar", style: "cancel" },
+                { text: i18n.t("common.cancel"), style: "cancel" },
                 {
-                  text: "Eliminar",
+                  text: i18n.t("common.delete"),
                   style: "destructive",
                   onPress: async () => {
                     await deleteVehicle(currentVehicle.id);
@@ -239,12 +249,14 @@ export default function VehicleDetailScreen() {
           }
         }}
       >
-        <Text style={styles.deleteButtonText}>Eliminar Vehículo</Text>
+        <Text style={styles.deleteButtonText}>
+          {i18n.t("common.delete")}
+        </Text>
       </TouchableOpacity>
 
       <View>
         <Text style={[styles.sectionTitle, { marginBottom: 8 }]}>
-          Todos
+          {i18n.t("alerts.all")}
         </Text>
 
       {activeMaintenances.map((m) => {
@@ -257,7 +269,7 @@ export default function VehicleDetailScreen() {
               ? "orange"
               : "green";
 
-        const categoryImage = getCategoryImage(m.title);
+        const categoryImage = getCategoryImage(m.category);
 
         return (
           <View
@@ -280,7 +292,7 @@ export default function VehicleDetailScreen() {
                 <View style={styles.maintenanceHeader}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                     <Text style={styles.maintenanceTitle}>
-                      {m.title.replace(/^[^-]+ - /, "")}
+                      {m.title}
                     </Text>
 
                     <StatusBadge status={status === "ok" ? "ok" : status} />
@@ -309,7 +321,70 @@ export default function VehicleDetailScreen() {
                   </TouchableOpacity>
                 </View>
 
-                <Text>Vence: {m.dueDate}</Text>
+                {(() => {
+                  const dueInfo = getDueDateStatus(m.dueDate);
+
+                  if (dueInfo.type === "expired") {
+                    return (
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                        <View
+                          style={{
+                            backgroundColor: "#FF3B30",
+                            paddingHorizontal: 8,
+                            paddingVertical: 2,
+                            borderRadius: 12,
+                          }}
+                        >
+                          <Text style={{ color: "white", fontSize: 12, fontWeight: "700" }}>
+                            {dueInfo.days}
+                          </Text>
+                        </View>
+                        <Text style={{ color: "#FF3B30", fontSize: 12, fontWeight: "600" }}>
+                          Vencida hace {dueInfo.days}{" "}
+                          {dueInfo.days === 1 ? "día" : "días"}
+                        </Text>
+                      </View>
+                    );
+                  }
+
+                  if (dueInfo.type === "urgent") {
+                    return (
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                        <View
+                          style={{
+                            backgroundColor: "#FF9500",
+                            paddingHorizontal: 8,
+                            paddingVertical: 2,
+                            borderRadius: 12,
+                          }}
+                        >
+                          <Text style={{ color: "white", fontSize: 12, fontWeight: "700" }}>
+                            {dueInfo.days}
+                          </Text>
+                        </View>
+                        <Text style={{ color: "#FF9500", fontSize: 12, fontWeight: "600" }}>
+                          ⏳ Vence en {dueInfo.days}{" "}
+                          {dueInfo.days === 1 ? "día" : "días"}
+                        </Text>
+                      </View>
+                    );
+                  }
+
+                  if (dueInfo.type === "upcoming") {
+                    return (
+                      <Text style={{ color: "#FF9500", fontSize: 12, fontWeight: "600" }}>
+                        Vence en: {dueInfo.days}{" "}
+                        {dueInfo.days === 1 ? "día" : "días"}
+                      </Text>
+                    );
+                  }
+
+                  return (
+                    <Text style={{ fontSize: 12 }}>
+                      Vence: {dueInfo.friendlyDate}
+                    </Text>
+                  );
+                })()}
               </View>
             </View>
           </View>
@@ -319,7 +394,7 @@ export default function VehicleDetailScreen() {
       {expiredMaintenances.length > 0 && (
         <View style={{ marginTop: 8 }}>
           <Text style={[styles.sectionTitle, { marginBottom: 8 }]}>
-            Vencidas
+            {i18n.t("alerts.expired")}
           </Text>
 
           {expiredMaintenances.map((m) => {
@@ -327,7 +402,7 @@ export default function VehicleDetailScreen() {
               m.dueDate,
               globalReminderDays,
             );
-            const categoryImage = getCategoryImage(m.title);
+            const categoryImage = getCategoryImage(m.category);
 
             return (
               <View
@@ -362,7 +437,7 @@ export default function VehicleDetailScreen() {
                         }}
                       >
                         <Text style={styles.maintenanceTitle}>
-                          {m.title.replace(/^[^-]+ - /, "")}
+                          {m.title}
                         </Text>
 
                         <StatusBadge
@@ -395,7 +470,70 @@ export default function VehicleDetailScreen() {
                       </TouchableOpacity>
                     </View>
 
-                    <Text>Vence: {m.dueDate}</Text>
+                    {(() => {
+                      const dueInfo = getDueDateStatus(m.dueDate);
+
+                      if (dueInfo.type === "expired") {
+                        return (
+                          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                            <View
+                              style={{
+                                backgroundColor: "#FF3B30",
+                                paddingHorizontal: 8,
+                                paddingVertical: 2,
+                                borderRadius: 12,
+                              }}
+                            >
+                              <Text style={{ color: "white", fontSize: 12, fontWeight: "700" }}>
+                                {dueInfo.days}
+                              </Text>
+                            </View>
+                            <Text style={{ color: "#FF3B30", fontSize: 12, fontWeight: "600" }}>
+                              Vencida hace {dueInfo.days}{" "}
+                              {dueInfo.days === 1 ? "día" : "días"}
+                            </Text>
+                          </View>
+                        );
+                      }
+
+                      if (dueInfo.type === "urgent") {
+                        return (
+                          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                            <View
+                              style={{
+                                backgroundColor: "#FF9500",
+                                paddingHorizontal: 8,
+                                paddingVertical: 2,
+                                borderRadius: 12,
+                              }}
+                            >
+                              <Text style={{ color: "white", fontSize: 12, fontWeight: "700" }}>
+                                {dueInfo.days}
+                              </Text>
+                            </View>
+                            <Text style={{ color: "#FF9500", fontSize: 12, fontWeight: "600" }}>
+                              ⏳ Vence en {dueInfo.days}{" "}
+                              {dueInfo.days === 1 ? "día" : "días"}
+                            </Text>
+                          </View>
+                        );
+                      }
+
+                      if (dueInfo.type === "upcoming") {
+                        return (
+                          <Text style={{ color: "#FF9500", fontSize: 12, fontWeight: "600" }}>
+                            Vence en: {dueInfo.days}{" "}
+                            {dueInfo.days === 1 ? "día" : "días"}
+                          </Text>
+                        );
+                      }
+
+                      return (
+                        <Text style={{ fontSize: 12 }}>
+                          Vence: {dueInfo.friendlyDate}
+                        </Text>
+                      );
+                    })()}
                   </View>
                 </View>
               </View>
@@ -407,7 +545,7 @@ export default function VehicleDetailScreen() {
       {activeMaintenances.length === 0 &&
         expiredMaintenances.length === 0 && (
           <Text style={{ color: "#666" }}>
-            No hay mantenimientos registrados
+            {i18n.t("alerts.noAlerts")}
           </Text>
         )}
       </View>
@@ -424,10 +562,20 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   infoCard: {
-    padding: 16,
-    backgroundColor: "#f2f2f2",
-    borderRadius: 12,
+    padding: 18,
+    backgroundColor: "#F6F6F6",
+    borderRadius: 28,
     marginBottom: 20,
+    overflow: "hidden",
+
+    // Shadow iOS
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+
+    // Shadow Android
+    elevation: 6,
   },
   name: {
     fontSize: 20,

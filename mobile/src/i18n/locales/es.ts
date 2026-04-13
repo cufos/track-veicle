@@ -1,0 +1,93 @@
+export default {
+  common: {
+    save: "Guardar",
+    delete: "Eliminar",
+    cancel: "Cancelar",
+    back: "Volver",
+  },
+  alerts: {
+    title: "Alertas",
+    all: "Todas",
+    expired: "Vencidas",
+    upcoming: "Próximas",
+    noAlerts: "No hay alertas activas 🎉",
+  },
+  maintenance: {
+    due: "Vence",
+    dueIn: "Vence en",
+    expiredAgo: "Vencida hace",
+    day: "día",
+    days: "días",
+  },
+  settings: {
+    mileageThresholds: "Umbrales Kilometraje",
+    warningKm: "Advertencia (km)",
+    criticalKm: "Crítico (km)",
+    language: "Idioma",
+    theme: "Tema",
+    data: "Datos",
+    changeTo: "Cambiar a",
+    dark: "Oscuro",
+    light: "Claro",
+    exportJson: "Exportar Datos (JSON)",
+    importJson: "Importar Datos (JSON)",
+    exported: "Datos exportados",
+    importTitle: "Importar Datos",
+    pasteJson: "Pega aquí el JSON exportado",
+    importSuccess: "Importación exitosa",
+    restartToApply: "Reinicia la app para ver los cambios",
+    invalidJson: "JSON inválido"
+  },
+  categories: {
+    maintenance: "Mantenimiento",
+    service: "Servicio",
+    inspection: "Inspección",
+    tires: "Neumáticos",
+    tax: "Impuesto de circulación",
+    insurance: "Aseguración",
+    other: "Otro"
+  },
+  vehicle: {
+    generalInfo: "Información General",
+    additionalInfo: "Información adicional",
+    name: "Nombre",
+    brand: "Marca",
+    model: "Modelo",
+    year: "Año",
+    fuelType: "Tipo de combustible",
+    vehicleType: "Tipo de vehículo",
+    selectFuel: "Seleccionar combustible",
+    selectType: "Seleccionar tipo",
+    kilometersOptional: "Kilómetros (opcional)",
+    save: "Guardar"
+  },
+  fuelTypes: {
+    gasolina: "Gasolina",
+    diesel: "Diesel",
+    electrico: "Eléctrico",
+    hibrido: "Híbrido"
+  },
+  vehicleTypes: {
+    carro: "Carro",
+    motor: "Motor",
+    van: "Van",
+    otro: "Otro"
+  },
+  maintenanceForm: {
+    selectCategory: "Selecciona una categoría",
+    changeCategory: "Cambiar categoría",
+    title: "Título",
+    titlePlaceholder: "Ej: Cambio de aceite",
+    notes: "Notas",
+    notesPlaceholder: "Detalles adicionales",
+    dueDate: "Fecha de vencimiento",
+    cost: "Costo",
+    costPlaceholder: "Ej: 120.50",
+    kilometers: "Kilometraje",
+    kilometersPlaceholder: "Ej: 85000",
+    remindBefore: "Recordar días antes",
+    remindBeforePlaceholder: "Ej: 7",
+    requiredError: "Completa los campos obligatorios",
+    save: "Guardar"
+  }
+};

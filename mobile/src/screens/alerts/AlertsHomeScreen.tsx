@@ -18,6 +18,7 @@ import {
   RouteProp,
 } from "@react-navigation/native";
 import StatusBadge from "../../components/StatusBadge";
+import i18n from "../../i18n";
 import { ImageSourcePropType } from "react-native";
 
 type ParamList = {
@@ -91,26 +92,31 @@ export default function AlertsHomeScreen() {
       });
     } else {
       navigation.setOptions({
-        title: "Alertas",
+        title: i18n.t("alerts.title"),
         headerLeft: undefined,
       });
     }
   }, [filteredVehicle, navigation]);
 
-  const getCategoryImage = (title: string): ImageSourcePropType | null => {
-    if (title.startsWith("Mantenimiento -"))
-      return require("../../../assets/customer-support.png");
-    if (title.startsWith("Servicio -"))
-      return require("../../../assets/oil-gallon_17034637.png");
-    if (title.startsWith("Inspección -"))
-      return require("../../../assets/checklist.png");
-    if (title.startsWith("Neumáticos -"))
-      return require("../../../assets/wheels_465128.png");
-    if (title.startsWith("Impuesto de circulación -"))
-      return require("../../../assets/car.png");
-    if (title.startsWith("Aseguración -"))
-      return require("../../../assets/clipboard.png");
-    return null;
+  const getCategoryImage = (
+    category: string,
+  ): ImageSourcePropType | null => {
+    switch (category) {
+      case "maintenance":
+        return require("../../../assets/customer-support.png");
+      case "service":
+        return require("../../../assets/oil-gallon_17034637.png");
+      case "inspection":
+        return require("../../../assets/checklist.png");
+      case "tires":
+        return require("../../../assets/wheels_465128.png");
+      case "tax":
+        return require("../../../assets/car.png");
+      case "insurance":
+        return require("../../../assets/clipboard.png");
+      default:
+        return null;
+    }
   };
 
   return (
@@ -156,21 +162,21 @@ export default function AlertsHomeScreen() {
       <View style={styles.filterContainer}>
         <TouchableOpacity onPress={() => setFilter("all")}>
           <Text style={filter === "all" ? styles.activeFilter : styles.filter}>
-            Todas
+            {i18n.t("alerts.all")}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => setFilter("expired")}>
           <Text
             style={filter === "expired" ? styles.activeFilter : styles.filter}
           >
-            Vencidas
+            {i18n.t("alerts.expired")}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => setFilter("upcoming")}>
           <Text
             style={filter === "upcoming" ? styles.activeFilter : styles.filter}
           >
-            Próximas
+            {i18n.t("alerts.upcoming")}
           </Text>
         </TouchableOpacity>
       </View>
@@ -229,7 +235,7 @@ export default function AlertsHomeScreen() {
 
                 const statusColor = status === "expired" ? "red" : "orange";
 
-                const categoryImage = getCategoryImage(m.title);
+                const categoryImage = getCategoryImage(m.category);
 
                 return (
                   <View
@@ -270,7 +276,7 @@ export default function AlertsHomeScreen() {
                                 { color: colors.text },
                               ]}
                             >
-                              {m.title.replace(/^[^-]+ - /, "")}
+                              {m.title}
                             </Text>
 
                             <StatusBadge
@@ -306,9 +312,91 @@ export default function AlertsHomeScreen() {
                           </TouchableOpacity>
                         </View>
 
-                        <Text style={{ color: colors.text }}>
-                          Vence: {m.dueDate}
-                        </Text>
+                        {(() => {
+                          const today = new Date();
+                          const due = new Date(m.dueDate);
+                          const diffTime = due.getTime() - today.getTime();
+                          const diffDays = Math.ceil(
+                            diffTime / (1000 * 60 * 60 * 24),
+                          );
+
+                          const friendlyDate = due.toLocaleDateString("es-ES", {
+                            day: "2-digit",
+                            month: "long",
+                            year: "numeric",
+                          });
+
+                          // 🔴 VENCIDA
+                          if (diffDays < 0) {
+                            const daysLate = Math.abs(diffDays);
+                            return (
+                              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                                <View
+                                  style={{
+                                    backgroundColor: "#FF3B30",
+                                    paddingHorizontal: 8,
+                                    paddingVertical: 2,
+                                    borderRadius: 12,
+                                  }}
+                                >
+                                  <Text style={{ color: "white", fontSize: 12, fontWeight: "700" }}>
+                                    {daysLate}
+                                  </Text>
+                                </View>
+                                <Text style={{ color: "#FF3B30", fontWeight: "600" }}>
+                                  Vencida hace {daysLate}{" "}
+                                  {daysLate === 1 ? "día" : "días"}
+                                </Text>
+                              </View>
+                            );
+                          }
+
+                          // 🟠 URGENTE (<7 días)
+                          if (diffDays <= 7) {
+                            return (
+                              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                                <View
+                                  style={{
+                                    backgroundColor: "#FF9500",
+                                    paddingHorizontal: 8,
+                                    paddingVertical: 2,
+                                    borderRadius: 12,
+                                  }}
+                                >
+                                  <Text style={{ color: "white", fontSize: 12, fontWeight: "700" }}>
+                                    {diffDays}
+                                  </Text>
+                                </View>
+                                <Text style={{ color: "#FF9500", fontWeight: "600" }}>
+                                  ⏳ Vence en {diffDays}{" "}
+                                  {diffDays === 1 ? "día" : "días"}
+                                </Text>
+                              </View>
+                            );
+                          }
+
+                          // 🟡 Próxima (<30 días)
+                          if (diffDays <= 30) {
+                            return (
+                              <Text
+                                style={{
+                                  color: "#FF9500",
+                                  fontWeight: "600",
+                                }}
+                              >
+                                Vence en: {diffDays}{" "}
+                                {diffDays === 1 ? "día" : "días"}
+                              </Text>
+                            );
+                          }
+
+                          // 📅 Fecha normal
+                          return (
+                            <Text style={{ color: colors.text }}>
+                              Vence: {friendlyDate}
+                            </Text>
+                          );
+                        })()}
                       </View>
                     </View>
                   </View>
@@ -333,7 +421,7 @@ export default function AlertsHomeScreen() {
               marginTop: 24,
             }}
           >
-            No hay alertas activas 🎉
+            {i18n.t("alerts.noAlerts")}
           </Text>
         )}
     </ScrollView>

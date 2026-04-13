@@ -1,12 +1,16 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { storageService } from "../services/storageService";
+import i18n, { loadLocale } from "../i18n";
 
 interface SettingsContextProps {
   globalReminderDays: number;
   setGlobalReminderDays: (days: number) => void;
   theme: "light" | "dark";
   setTheme: (theme: "light" | "dark") => void;
+
+  language: "es" | "en" | "it";
+  setLanguage: (lang: "es" | "en" | "it") => void;
 
   kmWarningThreshold: number;
   setKmWarningThreshold: (km: number) => void;
@@ -32,6 +36,7 @@ export const SettingsProvider = ({
 
   const [kmWarningThreshold, setKmWarningThreshold] = useState(100000);
   const [kmCriticalThreshold, setKmCriticalThreshold] = useState(200000);
+  const [language, setLanguage] = useState<"es" | "en" | "it">("es");
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -50,6 +55,10 @@ export const SettingsProvider = ({
         if (parsed.kmCriticalThreshold) {
           setKmCriticalThreshold(parsed.kmCriticalThreshold);
         }
+        if (parsed.language) {
+          setLanguage(parsed.language);
+          await loadLocale(parsed.language);
+        }
       }
     };
     loadSettings();
@@ -62,13 +71,15 @@ export const SettingsProvider = ({
         JSON.stringify({
           globalReminderDays,
           theme,
+          language,
           kmWarningThreshold,
           kmCriticalThreshold,
         }),
       );
     };
     saveSettings();
-  }, [globalReminderDays, theme]);
+    loadLocale(language);
+  }, [globalReminderDays, theme, language]);
 
   const resetAppData = async () => {
     await storageService.clearAll();
@@ -82,6 +93,8 @@ export const SettingsProvider = ({
         setGlobalReminderDays,
         theme,
         setTheme,
+        language,
+        setLanguage,
         kmWarningThreshold,
         setKmWarningThreshold,
         kmCriticalThreshold,

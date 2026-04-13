@@ -1,0 +1,93 @@
+export default {
+  common: {
+    save: "Salva",
+    delete: "Elimina",
+    cancel: "Annulla",
+    back: "Indietro",
+  },
+  alerts: {
+    title: "Avvisi",
+    all: "Tutte",
+    expired: "Scadute",
+    upcoming: "Prossime",
+    noAlerts: "Nessun avviso attivo 🎉",
+  },
+  maintenance: {
+    due: "Scade",
+    dueIn: "Scade tra",
+    expiredAgo: "Scaduta da",
+    day: "giorno",
+    days: "giorni",
+  },
+  settings: {
+    mileageThresholds: "Soglie Chilometraggio",
+    warningKm: "Avviso (km)",
+    criticalKm: "Critico (km)",
+    language: "Lingua",
+    theme: "Tema",
+    data: "Dati",
+    changeTo: "Passa a",
+    dark: "Scuro",
+    light: "Chiaro",
+    exportJson: "Esporta Dati (JSON)",
+    importJson: "Importa Dati (JSON)",
+    exported: "Dati esportati",
+    importTitle: "Importa Dati",
+    pasteJson: "Incolla qui il JSON esportato",
+    importSuccess: "Importazione riuscita",
+    restartToApply: "Riavvia l'app per vedere le modifiche",
+    invalidJson: "JSON non valido"
+  },
+  categories: {
+    maintenance: "Manutenzione",
+    service: "Servizio",
+    inspection: "Ispezione",
+    tires: "Pneumatici",
+    tax: "Bollo",
+    insurance: "Assicurazione",
+    other: "Altro"
+  },
+  vehicle: {
+    generalInfo: "Informazioni Generali",
+    additionalInfo: "Informazioni Aggiuntive",
+    name: "Nome",
+    brand: "Marca",
+    model: "Modello",
+    year: "Anno",
+    fuelType: "Tipo di carburante",
+    vehicleType: "Tipo di veicolo",
+    selectFuel: "Seleziona carburante",
+    selectType: "Seleziona tipo",
+    kilometersOptional: "Chilometri (opzionale)",
+    save: "Salva"
+  },
+  fuelTypes: {
+    gasolina: "Benzina",
+    diesel: "Diesel",
+    electrico: "Elettrico",
+    hibrido: "Ibrido"
+  },
+  vehicleTypes: {
+    carro: "Auto",
+    motor: "Moto",
+    van: "Van",
+    otro: "Altro"
+  },
+  maintenanceForm: {
+    selectCategory: "Seleziona una categoria",
+    changeCategory: "Cambia categoria",
+    title: "Titolo",
+    titlePlaceholder: "Es: Cambio olio",
+    notes: "Note",
+    notesPlaceholder: "Dettagli aggiuntivi",
+    dueDate: "Data di scadenza",
+    cost: "Costo",
+    costPlaceholder: "Es: 120.50",
+    kilometers: "Chilometraggio",
+    kilometersPlaceholder: "Es: 85000",
+    remindBefore: "Ricorda giorni prima",
+    remindBeforePlaceholder: "Es: 7",
+    requiredError: "Compila i campi obbligatori",
+    save: "Salva"
+  }
+};

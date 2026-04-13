@@ -29,7 +29,44 @@ export const MaintenancesProvider = ({
 
   const loadMaintenances = async () => {
     const data = await storageService.getMaintenances();
-    setMaintenances(data);
+
+    // ✅ Migración automática de mantenimientos antiguos
+    const migrated = data.map((m: any) => {
+      if (m.category) return m; // ya está migrado
+
+      if (typeof m.title === "string" && m.title.includes(" - ")) {
+        const [rawCategory, ...rest] = m.title.split(" - ");
+        const cleanTitle = rest.join(" - ");
+
+        const categoryMap: Record<string, any> = {
+          "Mantenimiento": "maintenance",
+          "Servicio": "service",
+          "Inspección": "inspection",
+          "Neumáticos": "tires",
+          "Impuesto de circulación": "tax",
+          "Aseguración": "insurance",
+        };
+
+        const mappedCategory = categoryMap[rawCategory];
+
+        if (mappedCategory) {
+          return {
+            ...m,
+            category: mappedCategory,
+            title: cleanTitle,
+          };
+        }
+      }
+
+      return m;
+    });
+
+    setMaintenances(migrated);
+
+    // Guardar si hubo cambios estructurales
+    if (JSON.stringify(data) !== JSON.stringify(migrated)) {
+      await storageService.saveMaintenances(migrated);
+    }
   };
 
   const addMaintenance = async (

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import {
   View,
   Text,
@@ -13,39 +14,36 @@ import { useMaintenances } from '../../context/MaintenancesContext';
 
 type Props = any;
 
-type CategoryType =
-  | 'Mantenimiento'
-  | 'Servicio'
-  | 'Inspección'
-  | 'Neumáticos'
-  | 'Impuesto de circulación'
-  | 'Aseguración';
+import { MaintenanceCategory } from '../../models/types';
+import i18n from '../../i18n';
 
-const CATEGORIES: CategoryType[] = [
-  'Mantenimiento',
-  'Servicio',
-  'Inspección',
-  'Neumáticos',
-  'Impuesto de circulación',
-  'Aseguración',
+const CATEGORIES: MaintenanceCategory[] = [
+  'maintenance',
+  'service',
+  'inspection',
+  'tires',
+  'tax',
+  'insurance',
 ];
 
-const CATEGORY_IMAGES: Record<CategoryType, any> = {
-  Mantenimiento: require('../../../assets/customer-support.png'),
-  Servicio: require('../../../assets/oil-gallon_17034637.png'),
-  Inspección: require('../../../assets/checklist.png'),
-  Neumáticos: require('../../../assets/wheels_465128.png'),
-  'Impuesto de circulación': require('../../../assets/car.png'),
-  Aseguración: require('../../../assets/clipboard.png'),
+const CATEGORY_IMAGES: Record<MaintenanceCategory, any> = {
+  maintenance: require('../../../assets/customer-support.png'),
+  service: require('../../../assets/oil-gallon_17034637.png'),
+  inspection: require('../../../assets/checklist.png'),
+  tires: require('../../../assets/wheels_465128.png'),
+  tax: require('../../../assets/car.png'),
+  insurance: require('../../../assets/clipboard.png'),
+  other: require('../../../assets/clipboard.png'),
 };
 
-const CATEGORY_COLORS: Record<CategoryType, string> = {
-  Mantenimiento: '#E8F4FD', // azul claro suave
-  Servicio: '#FFF4E6', // naranja claro suave
-  Inspección: '#EAF7F0', // verde claro suave
-  Neumáticos: '#F3E8FF', // violeta claro suave
-  'Impuesto de circulación': '#E6F7FF', // celeste muy claro
-  Aseguración: '#FFF0F6', // rosado muy claro
+const CATEGORY_COLORS: Record<MaintenanceCategory, string> = {
+  maintenance: '#E8F4FD',
+  service: '#FFF4E6',
+  inspection: '#EAF7F0',
+  tires: '#F3E8FF',
+  tax: '#E6F7FF',
+  insurance: '#FFF0F6',
+  other: '#F1F3F5',
 };
 
 export default function AddMaintenanceScreen({ route, navigation }: Props) {
@@ -64,49 +62,52 @@ export default function AddMaintenanceScreen({ route, navigation }: Props) {
     };
   }, [navigation]);
 
-  const extractCategoryFromTitle = (fullTitle: string): CategoryType | null => {
-    const found = CATEGORIES.find((cat) =>
-      fullTitle.startsWith(`${cat} - `),
-    );
-    return found || null;
-  };
-
-  const extractCleanTitle = (fullTitle: string): string => {
-    const category = extractCategoryFromTitle(fullTitle);
-    if (!category) return fullTitle;
-    return fullTitle.replace(`${category} - `, '');
-  };
-
   const [selectedCategory, setSelectedCategory] =
-    useState<CategoryType | null>(
-      maintenance ? extractCategoryFromTitle(maintenance.title) : null,
+    useState<MaintenanceCategory | null>(
+      maintenance?.category ?? null,
     );
 
   const [title, setTitle] = useState(
-    maintenance ? extractCleanTitle(maintenance.title) : '',
+    maintenance ? maintenance.title : '',
   );
   const [notes, setNotes] = useState(maintenance?.notes ?? '');
   const [dueDate, setDueDate] = useState(maintenance?.dueDate ?? '');
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date>(
+    maintenance?.dueDate ? new Date(maintenance.dueDate) : new Date(),
+  );
   const [reminderDaysBefore, setReminderDaysBefore] = useState(
     maintenance?.reminderDaysBefore
       ? String(maintenance.reminderDaysBefore)
       : '7',
   );
+  const [cost, setCost] = useState(
+    maintenance?.cost ? String(maintenance.cost) : '',
+  );
+  const [kilometers, setKilometers] = useState(
+    maintenance?.kilometers ? String(maintenance.kilometers) : '',
+  );
   const [type] = useState<'date' | 'interval'>('date');
 
   const handleSave = () => {
     if (!title || !dueDate || !selectedCategory) {
-      Alert.alert('Error', 'Completa los campos obligatorios');
+      Alert.alert(
+        i18n.t("common.cancel"),
+        i18n.t("maintenanceForm.requiredError"),
+      );
       return;
     }
 
     addMaintenance({
       vehicleId,
-      title: `${selectedCategory} - ${title}`,
+      category: selectedCategory,
+      title,
       dueDate,
       reminderDaysBefore: parseInt(reminderDaysBefore, 10),
       type,
       notes,
+      cost: cost ? parseFloat(cost) : undefined,
+      kilometers: kilometers ? parseInt(kilometers, 10) : undefined,
     });
 
     navigation.goBack();
@@ -114,7 +115,9 @@ export default function AddMaintenanceScreen({ route, navigation }: Props) {
 
   const renderCategoryGrid = () => (
     <View style={styles.gridContainer}>
-      <Text style={styles.title}>Selecciona una categoría</Text>
+      <Text style={styles.title}>
+        {i18n.t("maintenanceForm.selectCategory")}
+      </Text>
       <View style={styles.grid}>
         {CATEGORIES.map((category) => (
           <TouchableOpacity
@@ -130,7 +133,9 @@ export default function AddMaintenanceScreen({ route, navigation }: Props) {
               style={styles.categoryImage}
               resizeMode="contain"
             />
-            <Text style={styles.categoryText}>{category}</Text>
+            <Text style={styles.categoryText}>
+              {i18n.t(`categories.${category}`)}
+            </Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -140,49 +145,112 @@ export default function AddMaintenanceScreen({ route, navigation }: Props) {
   const renderForm = () => (
     <ScrollView contentContainerStyle={styles.container}>
       <TouchableOpacity onPress={() => setSelectedCategory(null)}>
-        <Text style={styles.changeCategory}>← Cambiar categoría</Text>
+        <Text style={styles.changeCategory}>
+          ← {i18n.t("maintenanceForm.changeCategory")}
+        </Text>
       </TouchableOpacity>
 
       <Text style={styles.categorySelected}>
-        Categoría: {selectedCategory}
+        {i18n.t('maintenance.due')}:{" "}
+        {selectedCategory
+          ? i18n.t(`categories.${selectedCategory}`)
+          : ''}
       </Text>
 
-      <Text style={styles.label}>Título *</Text>
+      <Text style={styles.label}>
+        {i18n.t("maintenanceForm.title")} *
+      </Text>
       <TextInput
         style={styles.input}
         value={title}
         onChangeText={setTitle}
-        placeholder="Ej: Cambio de aceite"
+        placeholder={i18n.t("maintenanceForm.titlePlaceholder")}
       />
 
-      <Text style={styles.label}>Notas</Text>
+      <Text style={styles.label}>
+        {i18n.t("maintenanceForm.notes")}
+      </Text>
       <TextInput
         style={[styles.input, styles.textArea]}
         value={notes}
         onChangeText={setNotes}
-        placeholder="Detalles adicionales"
+        placeholder={i18n.t("maintenanceForm.notesPlaceholder")}
         multiline
       />
 
-      <Text style={styles.label}>Fecha de vencimiento *</Text>
+      <Text style={styles.label}>
+        {i18n.t("maintenanceForm.dueDate")} *
+      </Text>
+
+      <TouchableOpacity
+        style={styles.input}
+        onPress={() => setShowDatePicker(true)}
+      >
+        <Text>
+          {(dueDate ? new Date(dueDate) : selectedDate).toLocaleDateString(
+            i18n.locale,
+            {
+              day: "2-digit",
+              month: "long",
+              year: "numeric",
+            },
+          )}
+        </Text>
+      </TouchableOpacity>
+
+      {showDatePicker && (
+        <DateTimePicker
+          value={selectedDate}
+          mode="date"
+          display="default"
+          onChange={(event, date) => {
+            setShowDatePicker(false);
+            if (date) {
+              setSelectedDate(date);
+              const formatted = date.toISOString().split('T')[0];
+              setDueDate(formatted);
+            }
+          }}
+        />
+      )}
+
+      <Text style={styles.label}>
+        {i18n.t("maintenanceForm.cost")}
+      </Text>
       <TextInput
         style={styles.input}
-        value={dueDate}
-        onChangeText={setDueDate}
-        placeholder="YYYY-MM-DD"
+        value={cost}
+        onChangeText={setCost}
+        keyboardType="numeric"
+        placeholder={i18n.t("maintenanceForm.costPlaceholder")}
       />
 
-      <Text style={styles.label}>Recordar días antes</Text>
+      <Text style={styles.label}>
+        {i18n.t("maintenanceForm.kilometers")}
+      </Text>
+      <TextInput
+        style={styles.input}
+        value={kilometers}
+        onChangeText={setKilometers}
+        keyboardType="numeric"
+        placeholder={i18n.t("maintenanceForm.kilometersPlaceholder")}
+      />
+
+      <Text style={styles.label}>
+        {i18n.t("maintenanceForm.remindBefore")}
+      </Text>
       <TextInput
         style={styles.input}
         value={reminderDaysBefore}
         onChangeText={setReminderDaysBefore}
         keyboardType="numeric"
-        placeholder="Ej: 7"
+        placeholder={i18n.t("maintenanceForm.remindBeforePlaceholder")}
       />
 
       <TouchableOpacity style={styles.button} onPress={handleSave}>
-        <Text style={styles.buttonText}>Guardar</Text>
+        <Text style={styles.buttonText}>
+          {i18n.t("maintenanceForm.save")}
+        </Text>
       </TouchableOpacity>
     </ScrollView>
   );

@@ -11,6 +11,7 @@ import {
 import { useSettings } from "../../context/SettingsContext";
 import { storageService } from "../../services/storageService";
 import { useTheme } from "@react-navigation/native";
+import i18n from "../../i18n";
 
 export default function SettingsHomeScreen() {
   const {
@@ -18,6 +19,8 @@ export default function SettingsHomeScreen() {
     setGlobalReminderDays,
     theme,
     setTheme,
+    language,
+    setLanguage,
     kmWarningThreshold,
     setKmWarningThreshold,
     kmCriticalThreshold,
@@ -34,12 +37,18 @@ export default function SettingsHomeScreen() {
     setGlobalReminderDays(Number(days));
     setKmWarningThreshold(Number(warningKm));
     setKmCriticalThreshold(Number(criticalKm));
-    Alert.alert("Guardado", "Configuración actualizada");
+    Alert.alert(
+      i18n.t("common.save"),
+      i18n.t("common.save") + " ✔"
+    );
   };
 
   const handleReset = async () => {
     await resetAppData();
-    Alert.alert("Reset completo", "Todos los datos fueron eliminados");
+    Alert.alert(
+      i18n.t("common.delete"),
+      i18n.t("common.delete") + " ✔"
+    );
   };
 
   const handleExport = async () => {
@@ -71,7 +80,7 @@ export default function SettingsHomeScreen() {
   return (
     <View style={styles.container}>
       <Text style={{ color: colors.text }}>
-        Días globales para marcar como próximo:
+        {i18n.t("maintenance.dueIn")} (global)
       </Text>
       <TextInput
         style={[
@@ -89,10 +98,12 @@ export default function SettingsHomeScreen() {
       />
 
       <Text style={[styles.sectionTitle, { color: colors.text }]}>
-        Umbrales Kilometraje
+        {i18n.t("settings.mileageThresholds")}
       </Text>
 
-      <Text style={{ color: colors.text }}>Advertencia (km):</Text>
+      <Text style={{ color: colors.text }}>
+        {i18n.t("settings.warningKm")}:
+      </Text>
       <TextInput
         style={[
           styles.input,
@@ -107,7 +118,9 @@ export default function SettingsHomeScreen() {
         keyboardType="numeric"
       />
 
-      <Text style={{ color: colors.text }}>Crítico (km):</Text>
+      <Text style={{ color: colors.text }}>
+        {i18n.t("settings.criticalKm")}:
+      </Text>
       <TextInput
         style={[
           styles.input,
@@ -123,12 +136,41 @@ export default function SettingsHomeScreen() {
       />
 
       <TouchableOpacity style={styles.button} onPress={handleSave}>
-        <Text style={styles.buttonText}>Guardar Configuración</Text>
+        <Text style={styles.buttonText}>
+          {i18n.t("common.save")}
+        </Text>
       </TouchableOpacity>
 
       <View style={{ height: 30 }} />
 
-      <Text style={[styles.sectionTitle, { color: colors.text }]}>Tema</Text>
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>
+        {i18n.t("settings.language")}
+      </Text>
+
+      <View style={{ flexDirection: "row", gap: 10, marginBottom: 20 }}>
+        {(["es", "en", "it"] as const).map((lang) => (
+          <TouchableOpacity
+            key={lang}
+            style={[
+              styles.button,
+              {
+                flex: 1,
+                backgroundColor:
+                  language === lang ? "#007AFF" : "#888",
+              },
+            ]}
+            onPress={() => setLanguage(lang)}
+          >
+            <Text style={styles.buttonText}>
+              {lang.toUpperCase()}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>
+        {i18n.t("settings.theme")}
+      </Text>
 
       <TouchableOpacity
         style={[
@@ -138,28 +180,39 @@ export default function SettingsHomeScreen() {
         onPress={() => setTheme(theme === "light" ? "dark" : "light")}
       >
         <Text style={styles.buttonText}>
-          Cambiar a {theme === "light" ? "Oscuro" : "Claro"}
+          {i18n.t("settings.changeTo")}{" "}
+          {theme === "light"
+            ? i18n.t("settings.dark")
+            : i18n.t("settings.light")}
         </Text>
       </TouchableOpacity>
 
       <View style={{ height: 30 }} />
 
-      <Text style={[styles.sectionTitle, { color: colors.text }]}>Datos</Text>
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>
+        {i18n.t("settings.data")}
+      </Text>
 
       <TouchableOpacity style={styles.button} onPress={handleExport}>
-        <Text style={styles.buttonText}>Exportar Datos (JSON)</Text>
+        <Text style={styles.buttonText}>
+          {i18n.t("settings.exportJson")}
+        </Text>
       </TouchableOpacity>
 
       <View style={{ height: 10 }} />
 
       <TouchableOpacity style={styles.button} onPress={handleImport}>
-        <Text style={styles.buttonText}>Importar Datos (JSON)</Text>
+        <Text style={styles.buttonText}>
+          {i18n.t("settings.importJson")}
+        </Text>
       </TouchableOpacity>
 
       <View style={{ height: 10 }} />
 
       <TouchableOpacity style={styles.resetButton} onPress={handleReset}>
-        <Text style={styles.buttonText}>Resetear Aplicación</Text>
+        <Text style={styles.buttonText}>
+          {i18n.t("common.delete")}
+        </Text>
       </TouchableOpacity>
     </View>
   );

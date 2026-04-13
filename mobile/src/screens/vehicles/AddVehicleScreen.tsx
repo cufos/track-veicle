@@ -14,6 +14,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { useVehicles } from "../../context/VehiclesContext";
 import { useNavigation, useTheme, useRoute } from "@react-navigation/native";
 import { Vehicle } from "../../models/types";
+import i18n from "../../i18n";
 
 type RouteParams = {
   vehicle?: Vehicle;
@@ -103,10 +104,10 @@ export default function AddVehicleScreen() {
         <Text
           style={[styles.sectionTitle, { color: colors.text, marginTop: 24 }]}
         >
-          Información General
+          {i18n.t("vehicle.generalInfo")}
         </Text>
         <TextInput
-          placeholder="Nombre"
+          placeholder={i18n.t("vehicle.name")}
           placeholderTextColor={dark ? "#aaa" : "#666"}
           style={[
             styles.input,
@@ -121,7 +122,7 @@ export default function AddVehicleScreen() {
         />
 
         <TextInput
-          placeholder="Marca"
+          placeholder={i18n.t("vehicle.brand")}
           placeholderTextColor={dark ? "#aaa" : "#666"}
           style={[
             styles.input,
@@ -136,7 +137,7 @@ export default function AddVehicleScreen() {
         />
 
         <TextInput
-          placeholder="Modelo"
+          placeholder={i18n.t("vehicle.model")}
           placeholderTextColor={dark ? "#aaa" : "#666"}
           style={[
             styles.input,
@@ -151,7 +152,7 @@ export default function AddVehicleScreen() {
         />
 
         <TextInput
-          placeholder="Año"
+          placeholder={i18n.t("vehicle.year")}
           placeholderTextColor={dark ? "#aaa" : "#666"}
           style={[
             styles.input,
@@ -168,17 +169,17 @@ export default function AddVehicleScreen() {
 
         <View style={styles.row}>
           <Text style={[styles.label, { color: colors.text }]}>
-            Tipo de combustible
+            {i18n.t("vehicle.fuelType")}
           </Text>
 
           <ModalSelector
             data={[
-              { key: "gasolina", label: "Gasolina" },
-              { key: "diesel", label: "Diesel" },
-              { key: "electrico", label: "Eléctrico" },
-              { key: "hibrido", label: "Híbrido" },
+              { key: "gasolina", label: i18n.t("fuelTypes.gasolina") },
+              { key: "diesel", label: i18n.t("fuelTypes.diesel") },
+              { key: "electrico", label: i18n.t("fuelTypes.electrico") },
+              { key: "hibrido", label: i18n.t("fuelTypes.hibrido") },
             ]}
-            initValue="Seleccionar combustible"
+            initValue={i18n.t("vehicle.selectFuel")}
             onChange={(option) =>
               setFuelType(
                 option.key as "gasolina" | "diesel" | "electrico" | "hibrido",
@@ -191,11 +192,11 @@ export default function AddVehicleScreen() {
             }}
             selectTextStyle={{ color: colors.text }}
             optionTextStyle={{ color: dark ? "#fff" : "#000" }}
-            cancelText="Cancelar"
+            cancelText={i18n.t("common.cancel")}
           >
             <View style={styles.selectorContent}>
               <Text style={{ color: colors.text, fontWeight: "600" }}>
-                {fuelType.charAt(0).toUpperCase() + fuelType.slice(1)}
+                {i18n.t(`fuelTypes.${fuelType}`)}
               </Text>
               <Text style={{ color: colors.text, marginLeft: 6 }}>›</Text>
             </View>
@@ -204,17 +205,17 @@ export default function AddVehicleScreen() {
 
         <View style={styles.row}>
           <Text style={[styles.label, { color: colors.text }]}>
-            Tipo de vehículo
+            {i18n.t("vehicle.vehicleType")}
           </Text>
 
           <ModalSelector
             data={[
-              { key: "carro", label: "Carro" },
-              { key: "motor", label: "Motor" },
-              { key: "van", label: "Van" },
-              { key: "otro", label: "Otro" },
+              { key: "carro", label: i18n.t("vehicleTypes.carro") },
+              { key: "motor", label: i18n.t("vehicleTypes.motor") },
+              { key: "van", label: i18n.t("vehicleTypes.van") },
+              { key: "otro", label: i18n.t("vehicleTypes.otro") },
             ]}
-            initValue="Seleccionar tipo"
+            initValue={i18n.t("vehicle.selectType")}
             onChange={(option) =>
               setVehicleType(option.key as "carro" | "motor" | "van" | "otro")
             }
@@ -225,11 +226,11 @@ export default function AddVehicleScreen() {
             }}
             selectTextStyle={{ color: colors.text }}
             optionTextStyle={{ color: dark ? "#fff" : "#000" }}
-            cancelText="Cancelar"
+            cancelText={i18n.t("common.cancel")}
           >
             <View style={styles.selectorContent}>
               <Text style={{ color: colors.text, fontWeight: "600" }}>
-                {vehicleType.charAt(0).toUpperCase() + vehicleType.slice(1)}
+                {i18n.t(`vehicleTypes.${vehicleType}`)}
               </Text>
               <Text style={{ color: colors.text, marginLeft: 6 }}>›</Text>
             </View>
@@ -239,7 +240,7 @@ export default function AddVehicleScreen() {
         <Text
           style={[styles.sectionTitle, { color: colors.text, marginTop: 24 }]}
         >
-          Información adicional
+          {i18n.t("vehicle.additionalInfo")}
         </Text>
 
         <TouchableOpacity
@@ -254,12 +255,16 @@ export default function AddVehicleScreen() {
           ]}
         >
           <Text style={{ color: colors.text }}>
-            {purchaseDate.toISOString().split("T")[0]}
+            {purchaseDate.toLocaleDateString(i18n.locale, {
+              day: "2-digit",
+              month: "long",
+              year: "numeric",
+            })}
           </Text>
         </TouchableOpacity>
 
         <TextInput
-          placeholder="Kilómetros (opcional)"
+          placeholder={i18n.t("vehicle.kilometersOptional")}
           placeholderTextColor={dark ? "#aaa" : "#666"}
           value={km}
           onChangeText={setKm}
@@ -285,7 +290,9 @@ export default function AddVehicleScreen() {
           {isSubmitting ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.buttonText}>Guardar</Text>
+            <Text style={styles.buttonText}>
+              {i18n.t("vehicle.save")}
+            </Text>
           )}
         </TouchableOpacity>
       </ScrollView>

@@ -14,6 +14,8 @@ import { useMaintenances } from "../../context/MaintenancesContext";
 import { getMaintenanceStatus } from "../../utils/dateUtils";
 import { useNavigation, useTheme } from "@react-navigation/native";
 import StatusBadge from "../../components/StatusBadge";
+import DueDateIndicator from "../../components/DueDateIndicator";
+import i18n from "../../i18n";
 
 const CARD_WIDTH = 220;
 const SCREEN_WIDTH = Dimensions.get("window").width;
@@ -220,7 +222,7 @@ export default function VehiclesHomeScreen() {
         <>
           <View style={styles.sectionHeaderRow}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              Próximos mantenimientos
+              {i18n.t("alerts.upcoming")}
             </Text>
 
             <TouchableOpacity
@@ -246,35 +248,83 @@ export default function VehiclesHomeScreen() {
                 ]}
               >
                 <Text style={{ color: colors.text }}>
-                  No hay mantenimientos próximos
+                  {i18n.t("alerts.noAlerts")}
                 </Text>
               </View>
             ))}
 
-          {vehicleMaintenances &&
-            vehicleMaintenances.map((m) => (
-              <View
-                key={m.id}
-                style={[
-                  styles.maintenanceBox,
-                  {
-                    backgroundColor: colors.card,
-                    borderColor: colors.border,
-                  },
-                ]}
-              >
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                  <Text style={{ color: colors.text, fontWeight: "600" }}>
-                    {m.title}
-                  </Text>
+          {vehicleMaintenances?.map((m) => {
+              const getCategoryImage = (category: string) => {
+                switch (category) {
+                  case "maintenance":
+                    return require("../../../assets/customer-support.png");
+                  case "service":
+                    return require("../../../assets/oil-gallon_17034637.png");
+                  case "inspection":
+                    return require("../../../assets/checklist.png");
+                  case "tires":
+                    return require("../../../assets/wheels_465128.png");
+                  case "tax":
+                    return require("../../../assets/car.png");
+                  case "insurance":
+                    return require("../../../assets/clipboard.png");
+                  default:
+                    return null;
+                }
+              };
 
-                  <StatusBadge status={m.status} />
+              const categoryImage = getCategoryImage(m.category);
+
+              return (
+                <View
+                  key={m.id}
+                  style={[
+                    styles.maintenanceBox,
+                    {
+                      backgroundColor: colors.card,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                    {categoryImage && (
+                      <Image
+                        source={categoryImage}
+                        style={{ width: 28, height: 28 }}
+                        resizeMode="contain"
+                      />
+                    )}
+
+                    <View style={{ flex: 1 }}>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 8,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            color: colors.text,
+                            fontWeight: "600",
+                          }}
+                        >
+                          {m.title}
+                        </Text>
+
+                        <StatusBadge status={m.status} />
+                      </View>
+
+                      <DueDateIndicator
+                        dueDate={m.dueDate}
+                        textColor={colors.text}
+                        fontSize={12}
+                      />
+                    </View>
+                  </View>
                 </View>
-                <Text style={{ color: colors.text, fontSize: 12 }}>
-                  Vence: {m.dueDate}
-                </Text>
-              </View>
-            ))}
+              );
+            })}
         </>
       )}
 

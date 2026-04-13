@@ -15,13 +15,30 @@ export interface Vehicle {
   createdAt: string;
 }
 
+export type MaintenanceCategory =
+  | "maintenance"
+  | "service"
+  | "inspection"
+  | "tires"
+  | "tax"
+  | "insurance"
+  | "other";
+
 export interface Maintenance {
   id: string;
   vehicleId: string;
+
+  // ✅ Nueva arquitectura: categoría interna traducible
+  category: MaintenanceCategory;
+
+  // ✅ Solo descripción, sin prefijo de categoría
   title: string;
+
   dueDate: string;
   reminderDaysBefore: number;
-  type: 'date' | 'interval';
+  type: "date" | "interval";
   notes?: string;
+  cost?: number;
+  kilometers?: number;
   createdAt: string;
 }
