@@ -1,39 +1,21 @@
 import { I18n } from "i18n-js";
-import * as Localization from "expo-localization";
+import es from "./locales/es";
+import en from "./locales/en";
+import it from "./locales/it";
 
-const i18n = new I18n();
-
-async function loadLocale(locale: "es" | "en" | "it") {
-  let messages;
-
-  switch (locale) {
-    case "es":
-      messages = await import("./locales/es");
-      break;
-    case "en":
-      messages = await import("./locales/en");
-      break;
-    case "it":
-      messages = await import("./locales/it");
-      break;
-    default:
-      messages = await import("./locales/es");
-  }
-
-  i18n.translations = {
-    ...i18n.translations,
-    [locale]: messages.default,
-  };
-
-  i18n.locale = locale;
-}
+const i18n = new I18n({
+  es,
+  en,
+  it,
+});
 
 i18n.enableFallback = true;
 i18n.defaultLocale = "es";
-const deviceLocale =
-  (Localization.getLocales()[0]?.languageCode as "es" | "en" | "it") ?? "es";
+i18n.locale = "es";
 
-loadLocale(deviceLocale);
+function loadLocale(locale: "es" | "en" | "it") {
+  i18n.locale = locale;
+}
 
 export { loadLocale };
 export default i18n;

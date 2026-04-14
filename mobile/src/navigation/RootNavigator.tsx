@@ -4,20 +4,25 @@ import { Image } from "react-native";
 import VehiclesStack from "./VehiclesStack";
 import AlertsStack from "./AlertsStack";
 import SettingsStack from "./SettingsStack";
+import i18n from "../i18n";
+import { useSettings } from "../context/SettingsContext";
 
 const Tab = createBottomTabNavigator();
 
 export default function RootNavigator() {
+  const { language } = useSettings();
+
   return (
     <Tab.Navigator
+      key={language}
       screenOptions={{
-        headerShown: false as boolean,
+        headerShown: false,
         tabBarActiveTintColor: "#007AFF",
         tabBarInactiveTintColor: "gray",
       }}
     >
       <Tab.Screen
-        name="Vehículos"
+        name={i18n.t("vehicle.screenTitle")}
         component={VehiclesStack}
         options={{
           tabBarIcon: ({ size, color }) => (
@@ -30,7 +35,7 @@ export default function RootNavigator() {
         }}
       />
       <Tab.Screen
-        name="Alertas"
+        name={i18n.t("alerts.screenTitle")}
         component={AlertsStack}
         options={{
           tabBarIcon: ({ size, color }) => (
@@ -43,7 +48,7 @@ export default function RootNavigator() {
         }}
       />
       <Tab.Screen
-        name="Ajustes"
+        name={i18n.t("settings.screenTitle")}
         component={SettingsStack}
         options={{
           tabBarIcon: ({ size, color }) => (

@@ -36,13 +36,22 @@ export const SettingsProvider = ({
 
   const [kmWarningThreshold, setKmWarningThreshold] = useState(100000);
   const [kmCriticalThreshold, setKmCriticalThreshold] = useState(200000);
-  const [language, setLanguage] = useState<"es" | "en" | "it">("es");
+  const [language, setLanguageState] = useState<"es" | "en" | "it">("es");
+
+  const setLanguage = (lang: "es" | "en" | "it") => {
+    setLanguageState(lang);
+    loadLocale(lang);
+  };
 
   useEffect(() => {
     const loadSettings = async () => {
       const data = await AsyncStorage.getItem(SETTINGS_KEY);
+
+      let initialLanguage: "es" | "en" | "it" = "es";
+
       if (data) {
         const parsed = JSON.parse(data);
+
         if (parsed.globalReminderDays) {
           setGlobalReminderDays(parsed.globalReminderDays);
         }
@@ -56,11 +65,14 @@ export const SettingsProvider = ({
           setKmCriticalThreshold(parsed.kmCriticalThreshold);
         }
         if (parsed.language) {
-          setLanguage(parsed.language);
-          await loadLocale(parsed.language);
+          initialLanguage = parsed.language;
         }
       }
+
+      setLanguage(initialLanguage);
+      loadLocale(initialLanguage);
     };
+
     loadSettings();
   }, []);
 
@@ -78,8 +90,8 @@ export const SettingsProvider = ({
       );
     };
     saveSettings();
-    loadLocale(language);
   }, [globalReminderDays, theme, language]);
+
 
   const resetAppData = async () => {
     await storageService.clearAll();

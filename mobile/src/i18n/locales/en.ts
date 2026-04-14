@@ -7,6 +7,8 @@ export default {
   },
   alerts: {
     title: "Alerts",
+    screenTitle: "Alerts",
+    viewAll: "View all",
     all: "All",
     expired: "Expired",
     upcoming: "Upcoming",
@@ -20,6 +22,7 @@ export default {
     days: "days",
   },
   settings: {
+    screenTitle: "Settings",
     mileageThresholds: "Mileage Thresholds",
     warningKm: "Warning (km)",
     criticalKm: "Critical (km)",
@@ -48,6 +51,10 @@ export default {
     other: "Other"
   },
   vehicle: {
+    screenTitle: "Vehicles",
+    addVehicle: "Add Vehicle",
+    vehicleDetail: "Vehicle Detail",
+    addMaintenance: "Add Maintenance",
     generalInfo: "General Information",
     additionalInfo: "Additional Information",
     name: "Name",

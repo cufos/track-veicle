@@ -7,6 +7,8 @@ export default {
   },
   alerts: {
     title: "Avvisi",
+    screenTitle: "Avvisi",
+    viewAll: "Vedi tutte",
     all: "Tutte",
     expired: "Scadute",
     upcoming: "Prossime",
@@ -20,6 +22,7 @@ export default {
     days: "giorni",
   },
   settings: {
+    screenTitle: "Impostazioni",
     mileageThresholds: "Soglie Chilometraggio",
     warningKm: "Avviso (km)",
     criticalKm: "Critico (km)",
@@ -48,6 +51,10 @@ export default {
     other: "Altro"
   },
   vehicle: {
+    screenTitle: "Veicoli",
+    addVehicle: "Aggiungi Veicolo",
+    vehicleDetail: "Dettaglio Veicolo",
+    addMaintenance: "Aggiungi Manutenzione",
     generalInfo: "Informazioni Generali",
     additionalInfo: "Informazioni Aggiuntive",
     name: "Nome",

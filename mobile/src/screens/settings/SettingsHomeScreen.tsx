@@ -6,12 +6,13 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
-  Image,
+  ScrollView,
 } from "react-native";
 import { useSettings } from "../../context/SettingsContext";
 import { storageService } from "../../services/storageService";
 import { useTheme } from "@react-navigation/native";
 import i18n from "../../i18n";
+import { DevSettings } from "react-native";
 
 export default function SettingsHomeScreen() {
   const {
@@ -45,9 +46,18 @@ export default function SettingsHomeScreen() {
 
   const handleReset = async () => {
     await resetAppData();
+
     Alert.alert(
       i18n.t("common.delete"),
-      i18n.t("common.delete") + " ✔"
+      i18n.t("common.delete") + " ✔",
+      [
+        {
+          text: "OK",
+          onPress: () => {
+            DevSettings.reload();
+          },
+        },
+      ]
     );
   };
 
@@ -78,7 +88,11 @@ export default function SettingsHomeScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={{ paddingBottom: 40 }}
+      showsVerticalScrollIndicator={false}
+    >
       <Text style={{ color: colors.text }}>
         {i18n.t("maintenance.dueIn")} (global)
       </Text>
@@ -168,26 +182,6 @@ export default function SettingsHomeScreen() {
         ))}
       </View>
 
-      <Text style={[styles.sectionTitle, { color: colors.text }]}>
-        {i18n.t("settings.theme")}
-      </Text>
-
-      <TouchableOpacity
-        style={[
-          styles.button,
-          { backgroundColor: theme === "light" ? "#007AFF" : "#444" },
-        ]}
-        onPress={() => setTheme(theme === "light" ? "dark" : "light")}
-      >
-        <Text style={styles.buttonText}>
-          {i18n.t("settings.changeTo")}{" "}
-          {theme === "light"
-            ? i18n.t("settings.dark")
-            : i18n.t("settings.light")}
-        </Text>
-      </TouchableOpacity>
-
-      <View style={{ height: 30 }} />
 
       <Text style={[styles.sectionTitle, { color: colors.text }]}>
         {i18n.t("settings.data")}
@@ -214,7 +208,7 @@ export default function SettingsHomeScreen() {
           {i18n.t("common.delete")}
         </Text>
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 }
 

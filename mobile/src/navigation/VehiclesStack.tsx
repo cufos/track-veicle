@@ -4,15 +4,20 @@ import VehiclesHomeScreen from "../screens/vehicles/VehiclesHomeScreen";
 import AddVehicleScreen from "../screens/vehicles/AddVehicleScreen";
 import VehicleDetailScreen from "../screens/vehicles/VehicleDetailScreen";
 import AddMaintenanceScreen from "../screens/maintenances/AddMaintenanceScreen";
+import i18n from "../i18n";
+import { useSettings } from "../context/SettingsContext";
 
 const Stack = createNativeStackNavigator();
 
 export default function VehiclesStack() {
+  const { language } = useSettings();
+
   return (
     <Stack.Navigator
+      key={language}
       screenOptions={{
         headerStyle: {
-          backgroundColor: '#FFFFFF',
+          backgroundColor: "#FFFFFF",
         },
         headerShadowVisible: false,
       }}
@@ -20,24 +25,24 @@ export default function VehiclesStack() {
       <Stack.Screen
         name="VehiclesHome"
         component={VehiclesHomeScreen}
-        options={{ title: "Vehículos" }}
+        options={{ title: i18n.t("vehicle.screenTitle") }}
       />
       <Stack.Screen
         name="AddVehicle"
         component={AddVehicleScreen}
-        options={{ title: "Agregar Vehículo" }}
+        options={{ title: i18n.t("vehicle.addVehicle") }}
       />
       <Stack.Screen
         name="VehicleDetail"
         component={VehicleDetailScreen}
-        options={{ title: "Detalle del Vehículo" }}
+        options={{ title: i18n.t("vehicle.vehicleDetail") }}
       />
       <Stack.Screen
         name="AddMaintenance"
         component={AddMaintenanceScreen}
         options={{
-          title: "Agregar Mantenimiento",
-          headerBackTitle: "Detalle",
+          title: i18n.t("vehicle.addMaintenance"),
+          headerBackTitle: i18n.t("vehicle.vehicleDetail"),
         }}
       />
     </Stack.Navigator>
